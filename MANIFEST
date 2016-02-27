@@ -1,0 +1,9 @@
+Changes
+MANIFEST
+MANIFEST.SKIP
+Make.pm
+Makefile.PL
+README
+bmake
+pmake
+t/make.t

@@ -1,0 +1,19 @@
+Changes in 0.03
+	Handle $(mktmp,file ...) for Win32
+	Handle dmake-like $(var:s,\,\\,) for Win32
+	Collapse rules which are partially specified as variables e.g.
+		$(INST_STATIC) : 
+		libpTk.a :
+	both add dependancies to libpTk.a
+	Use negative-lookbehind to implement $$ as a literal $ e.g. in
+	command line perl scripts.
+	Add a test to keep cpan-testers from complaining it has not got one.
+
+
+Changes is 0.02
+	Sarathy's Win32 patches
+	Handle blank lines in build command sequences
+	Add README, Changes   
+
+
+
