@@ -125,6 +125,17 @@ sub out_of_date
  my $count = 0;
  foreach $dep ($self->exp_depend)
   {
+   # This is a dumb fix around regex issues with using Strawberry perl.
+   # This may not fix for all versions of Strawberry perl or all versions
+   # of windows, but is a hacky work-around until a real fix can be implemented
+   if ($^O eq 'MSWin32') {
+	if ($dep =~ m/libConfig.pm/) {
+		$dep =~ s#libConfig.pm#lib\\Config.pm#;
+	}
+	if ($dep =~ m/COREconfig.h/) {
+		$dep =~ s#COREconfig.h#CORE\\config.h#;
+	}
+   }
    my $date = $info->date($dep);
    $count++;
    if (!defined($date) || !defined($tdate) || $date < $tdate)
@@ -440,7 +451,19 @@ sub recurse
    my $dep;
    my $j = 0;
    foreach $dep ($rule->exp_depend)
-    {
+     {
+	   # This is a dumb fix around regex issues with using Strawberry perl.
+	   # This may not fix for all versions of Strawberry perl or all versions
+	   # of windows, but is a hacky work-around until a real fix can be implemented
+	   if (($dep =~ m/libConfig.pm/) and ($^O eq 'MSWin32') ) {
+		   print STDERR "we got here with $dep\n";
+		$dep =~ s#libConfig.pm#lib//Config.pm#;
+	   }
+	   if (($dep =~ m/COREconfig.h/) and ($^O eq 'MSWin32') ) {
+		   print STDERR "we got here with $dep\n";
+		$dep =~ s#COREconfig.h#CORE//config.h#;
+	   }
+
      my $t = $info->{Depend}{$dep};
      if (defined $t)
       {
