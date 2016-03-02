@@ -7,3 +7,4 @@ README
 bmake
 pmake
 t/make.t
+t/00-compile.t
