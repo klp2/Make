@@ -1,7 +1,7 @@
 Changes
 MANIFEST
 MANIFEST.SKIP
-Make.pm
+lib/Make.pm
 Makefile.PL
 README
 bmake
