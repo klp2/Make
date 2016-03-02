@@ -48,5 +48,15 @@ my %config = (
 		: ()
 	)
 );
-		       	
+
+my %test_requires = (
+	'Test::More' => 1,
+);
+
+if ( eval { ExtUtils::MakeMaker->VERSION(6.64) } ) {
+	$config{TEST_REQUIRES} = \%test_requires;
+} else {
+	$config{BUILD_REQUIRES} = \%test_requires;
+}
+
 WriteMakefile(%config);

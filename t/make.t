@@ -1,10 +1,9 @@
 #!perl
 use Make;
-use Cwd;
-use Test;    
-BEGIN { plan tests => 2 };
+#use Cwd;
+use Test::More tests => 2;
 my $m = Make->new(Makefile => "Makefile");
-ok(ref($m),'Make',"Make Object");
+#ok(ref($m),'Make',"Make Object");
+is ref($m), 'Make';
 eval { $m->Make('all') };
-ok($@,'',"Make all");
-
+is $@,'',;
