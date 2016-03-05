@@ -4,7 +4,7 @@ use strict;
 my $generation = 0; # lexical cross-package scope used!
 
 # Package to handle 'magic' variables pertaining to rules e.g. $@ $* $^ $?
-# by using tie to this package 'subsvars' can work with array of 
+# by using tie to this package 'subsvars' can work with array of
 # hash references to possible sources of variable definitions.
 
 sub TIEHASH
@@ -33,7 +33,7 @@ package Make::Rule;
 use Carp;
 use strict;
 
-# Bottom level 'rule' package 
+# Bottom level 'rule' package
 # An instance exists for each ':' or '::' rule in the makefile.
 # The commands and dependancies are kept here.
 
@@ -57,21 +57,21 @@ sub Base
 sub Info
 {
  return shift->target->Info;
-}       
+}
 
 sub depend
 {
  my $self = shift;
  if (@_)
-  {            
+  {
    my $name = $self->Name;
    my $dep = shift;
-   confess "dependants $dep are not an array reference" unless ('ARRAY' eq ref $dep); 
+   confess "dependants $dep are not an array reference" unless ('ARRAY' eq ref $dep);
    my $file;
    foreach $file (@$dep)
     {
      unless (exists $self->{DEPHASH}{$file})
-      {    
+      {
        $self->{DEPHASH}{$file} = 1;
        push(@{$self->{DEPEND}},$file);
       }
@@ -86,7 +86,7 @@ sub command
  if (@_)
   {
    my $cmd = shift;
-   confess "commands $cmd are not an array reference" unless ('ARRAY' eq ref $cmd); 
+   confess "commands $cmd are not an array reference" unless ('ARRAY' eq ref $cmd);
    if (@$cmd)
     {
      if (@{$self->{COMMAND}})
@@ -100,11 +100,11 @@ sub command
    else
     {
      if (@{$self->{COMMAND}})
-      { 
+      {
        # warn "Command for ".$self->Name," retained";
        # print STDERR "Was:",join("\n",@{$self->{COMMAND}}),"\n";
       }
-    } 
+    }
   }
  return (wantarray) ? @{$self->{COMMAND}} : $self->{COMMAND};
 }
@@ -139,7 +139,7 @@ sub out_of_date
    my $date = $info->date($dep);
    $count++;
    if (!defined($date) || !defined($tdate) || $date < $tdate)
-    {       
+    {
      # warn $self->Name." ood wrt ".$dep."\n";
      return 1 unless $array;
      push(@dep,$dep);
@@ -180,7 +180,7 @@ sub exp_command
 }
 
 #
-# clone creates a new rule derived from an existing rule, but 
+# clone creates a new rule derived from an existing rule, but
 # with a different target. Used when left hand side was a variable.
 # perhaps should be used for dot/pattern rule processing too.
 #
@@ -203,8 +203,8 @@ sub new
  my $self = bless { TARGET => $target,             # parent target (left hand side)
                     KIND => $kind,                 # : or ::
                     DEPEND => [], DEPHASH => {},   # right hand args
-                    COMMAND => []                  # command(s)  
-                  },$class;        
+                    COMMAND => []                  # command(s)
+                  },$class;
  $self->depend(shift) if (@_);
  $self->command(shift) if (@_);
  return $self;
@@ -233,7 +233,7 @@ sub find_commands
 }
 
 #
-# Spew a shell script to perfom the 'make' e.g. make -n 
+# Spew a shell script to perfom the 'make' e.g. make -n
 #
 sub Script
 {
@@ -280,9 +280,9 @@ sub Make
 }
 
 #
-# Print rule out in makefile syntax 
+# Print rule out in makefile syntax
 # - currently has variables expanded as debugging aid.
-# - will eventually become make -p 
+# - will eventually become make -p
 # - may be useful for writing makefiles from MakeMaker too...
 #
 sub Print
@@ -305,7 +305,7 @@ sub Print
   }
  else
   {
-   print STDERR "No commands for ",$self->Name,"\n" unless ($self->target->phony); 
+   print STDERR "No commands for ",$self->Name,"\n" unless ($self->target->phony);
   }
  print "\n";
 }
@@ -317,14 +317,14 @@ use Cwd;
 
 #
 # Intermediate 'target' package
-# There is an instance of this for each 'target' that apears on 
+# There is an instance of this for each 'target' that apears on
 # the left hand side of a rule i.e. for each thing that can be made.
-# 
+#
 sub new
 {
  my ($class,$info,$target) = @_;
  return bless { NAME => $target,     # name of thing
-                MAKEFILE => $info,   # Makefile context 
+                MAKEFILE => $info,   # Makefile context
                 Pass => 0            # Used to determine if 'done' this sweep
               },$class;
 }
@@ -340,7 +340,7 @@ sub phony
 {
  my $self = shift;
  return $self->Info->phony($self->Name);
-}   
+}
 
 
 sub colon
@@ -352,7 +352,7 @@ sub colon
     {
      my $dep = $self->{COLON};
      if (@_ == 1)
-      {            
+      {
        # merging an existing rule
        my $other = shift;
        $dep->depend(scalar $other->depend);
@@ -421,7 +421,7 @@ sub ExpandTarget
    my $t = $info->Target($expand);
    if (defined $colon)
     {
-     $t->colon($colon); 
+     $t->colon($colon);
     }
    foreach my $d (@{$dcolon})
     {
@@ -467,14 +467,14 @@ sub recurse
      my $t = $info->{Depend}{$dep};
      if (defined $t)
       {
-       $t->$method(@args) 
+       $t->$method(@args)
       }
      else
       {
        unless ($info->exists($dep))
         {
-         my $dir = cwd();                                      
-         die "Cannot recurse $method - no target $dep in $dir" 
+         my $dir = cwd();
+         die "Cannot recurse $method - no target $dep in $dir"
         }
       }
     }
@@ -528,7 +528,7 @@ use Config;
 use Cwd;
 use File::Spec;
 use vars qw($VERSION);
-$VERSION = '1.00';
+$VERSION = '1.1.0';
 
 my %date;
 
@@ -589,7 +589,7 @@ sub patmatch
 }
 
 #
-# old vpath lookup routine 
+# old vpath lookup routine
 #
 sub locate
 {
@@ -640,7 +640,7 @@ sub dotrules
       }
      else
       {
-       # print STDERR "Build \% : \%$t\n";                   
+       # print STDERR "Build \% : \%$t\n";
        $self->Target('%')->dcolon(['%'.$t],scalar $r->colon->command);
       }
     }
@@ -661,16 +661,16 @@ sub dotrules
 }
 
 #
-# Return 'full' pathname of name given directory info. 
+# Return 'full' pathname of name given directory info.
 # - may be the place to do vpath stuff ?
-#               
+#
 
 my %pathname;
 
 sub pathname
 {
  my ($self,$name) = @_;
- my $hash = $self->{'Pathname'}; 
+ my $hash = $self->{'Pathname'};
  unless (exists $hash->{$name})
   {
    if (File::Spec->file_name_is_absolute($name))
@@ -679,17 +679,17 @@ sub pathname
     }
    else
     {
-     $name =~ s,^\./,,;                             
+     $name =~ s,^\./,,;
      $hash->{$name} = File::Spec->catfile($self->{Dir},$name);
     }
   }
  return $hash->{$name};
- 
+
 }
 
 #
 # Return modified date of name if it exists
-# 
+#
 sub date
 {
  my ($self,$name) = @_;
@@ -717,7 +717,7 @@ sub exists
 
 #
 # See if we can find a %.o : %.c rule for target
-# .c.o rules are already converted to this form 
+# .c.o rules are already converted to this form
 #
 sub patrule
 {
@@ -739,7 +739,7 @@ sub patrule
          my $dep = $dep[0];
          $dep =~ s/%/$Pat/g;
          # print STDERR "Try $target : $dep\n";
-         if ($self->exists($dep)) 
+         if ($self->exists($dep))
           {
            foreach (@dep)
             {
@@ -796,7 +796,7 @@ sub subsvars
  local $_ = shift;
  my @var = @_;
  push(@var,$self->{Override},$self->{Vars},\%ENV);
- croak("Trying to subsitute undef value") unless (defined $_); 
+ croak("Trying to subsitute undef value") unless (defined $_);
  while (/(?<!\$)\$\(([^()]+)\)/ || /(?<!\$)\$([<\@^?*])/)
   {
    my ($key,$head,$tail) = ($1,$`,$');
@@ -809,12 +809,12 @@ sub subsvars
        $value = $hash->{$var};
        if (defined $value)
         {
-         last; 
+         last;
         }
       }
      unless (defined $value)
       {
-       die "$var not defined in '$_'" unless (length($var) > 1); 
+       die "$var not defined in '$_'" unless (length($var) > 1);
        $value = '';
       }
      if (defined $op)
@@ -828,8 +828,8 @@ sub subsvars
         }
        else
         {
-         die "$var:$op = '$value'\n"; 
-        }   
+         die "$var:$op = '$value'\n";
+        }
       }
     }
    elsif ($key =~ /wildcard\s*(.*)$/)
@@ -867,7 +867,7 @@ sub subsvars
      my ($a,$b) = ($1,$2);
      $value = $3;
      $a =~ s/\./\\./;
-     $value =~ s/$a/$b/; 
+     $value =~ s/$a/$b/;
     }
    elsif ($key =~ /^mktmp,(\S+)\s*(.*)$/)
     {
@@ -907,14 +907,14 @@ sub tokenize
     {
      if (s/^\$([\(\{])//)
       {
-       $token .= $&; 
+       $token .= $&;
        my $paren = $1 eq '(';
        my $brace = $1 eq '{';
        my $count = 1;
        while (length($_) && ($paren || $brace))
         {
          s/^.//;
-         $token .= $&; 
+         $token .= $&;
          $paren += ($& eq '(');
          $paren -= ($& eq ')');
          $brace += ($& eq '{');
@@ -937,7 +937,7 @@ sub tokenize
 #
 # read makefile (or fragment of one) either as a result
 # of a command line, or an 'include' in another makefile.
-# 
+#
 sub makefile
 {
  my ($self,$makefile,$name) = @_;
@@ -953,7 +953,7 @@ Makefile:
      chop($_);
      s/\s*$//;
      my $more = <$makefile>;
-     $more =~ s/^\s*/ /; 
+     $more =~ s/^\s*/ /;
      $_ .= $more;
      redo;
     }
@@ -1002,14 +1002,14 @@ Makefile:
        next if (/^\s*#/);
        next if (/^\s*$/);
        last unless (/^\t/);
-       chop($_);         
-       if (/\\$/)        
-        {                
+       chop($_);
+       if (/\\$/)
+        {
          chop($_);
          $_ .= ' ';
          $_ .= <$makefile>;
-         redo;           
-        }                
+         redo;
+        }
        next if (/^\s*$/);
        s/^\s+//;
        push(@cmnds,$_);
@@ -1090,7 +1090,7 @@ sub parse
      if (-r $file)
       {
        $self->{Makefile} = $name;
-       last; 
+       last;
       }
     }
   }
@@ -1101,7 +1101,7 @@ sub parse
 
  # Next bits should really be done 'lazy' on need.
 
- $self->pseudos;         # Pull out .SUFFIXES etc. 
+ $self->pseudos;         # Pull out .SUFFIXES etc.
  $self->dotrules;        # Convert .c.o into %.o : %.c
 }
 
@@ -1140,7 +1140,7 @@ sub exec
     }
    else
     {
-     my $dir = $self->{Dir}; 
+     my $dir = $self->{Dir};
      chdir($dir) || die "Cannot cd to $dir";
      # handle leading VAR=value here ?
      # To handle trivial cases like ': libpTk.a' force using /bin/sh
@@ -1174,8 +1174,8 @@ sub apply
  #
  # This expansion is dubious as it alters the database
  # as a function of current values of Override.
- # 
- $self->ExpandTarget;    # Process $(VAR) : 
+ #
+ $self->ExpandTarget;    # Process $(VAR) :
  @targets = ($self->{'Targets'}[0])->Name unless (@targets);
  # print STDERR join(' ',Targets => $method,map($_->Name,@targets)),"\n";
  foreach (@targets)
@@ -1184,7 +1184,7 @@ sub apply
    unless (defined $t)
     {
      print STDERR join(' ',$method,@_),"\n";
-     die "Cannot `$method' - no target $_" 
+     die "Cannot `$method' - no target $_"
     }
    $t->$method();
   }
@@ -1212,10 +1212,10 @@ sub new
   {
    chomp($args{Dir} = getcwd());
   }
- my $self = bless { %args, 
-                   Pattern  => {},  # GNU style %.o : %.c 
+ my $self = bless { %args,
+                   Pattern  => {},  # GNU style %.o : %.c
                    Dot      => {},  # Trad style .c.o
-                   Vpath    => {},  # vpath %.c info 
+                   Vpath    => {},  # vpath %.c info
                    Vars     => {},  # Variables defined in makefile
                    Depend   => {},  # hash of targets
                    Targets  => [],  # ordered version so we can find 1st one
@@ -1234,13 +1234,13 @@ sub new
 
 =head1 NAME
 
-Make - module for processing makefiles 
+Make - module for processing makefiles
 
 =head1 SYNOPSIS
 
 	require Make;
 	my $make = Make->new(...);
-	$make->parse($file);   
+	$make->parse($file);
 	$make->Script(@ARGV)
 	$make->Make(@ARGV)
 	$make->Print(@ARGV)
@@ -1254,20 +1254,20 @@ Make - module for processing makefiles
 =head1 DESCRIPTION
 
 Make->new creates an object if C<new(Makefile =E<gt> $file)> is specified
-then it is parsed. If not the usual makefile Makefile sequence is 
-used. (If GNU => 1 is passed to new then GNUmakefile is looked for first.) 
+then it is parsed. If not the usual makefile Makefile sequence is
+used. (If GNU => 1 is passed to new then GNUmakefile is looked for first.)
 
 C<$make-E<gt>Make(target...)> 'makes' the target(s) specified
 (or the first 'real' target in the makefile).
 
 C<$make-E<gt>Print> can be used to 'print' to current C<select>'ed stream
-a form of the makefile with all variables expanded. 
+a form of the makefile with all variables expanded.
 
-C<$make-E<gt>Script(target...)> can be used to 'print' to 
+C<$make-E<gt>Script(target...)> can be used to 'print' to
 current C<select>'ed stream the equivalent bourne shell script
 that a make would perform i.e. the output of C<make -n>.
 
-There are other methods (used by parse) which can be used to add and 
+There are other methods (used by parse) which can be used to add and
 manipulate targets and their dependants. There is a hierarchy of classes
 which is still evolving. These classes and their methods will be documented when
 they are a little more stable.
@@ -1276,14 +1276,14 @@ The syntax of makefile accepted is reasonably generic, but I have not re-read
 any documentation yet, rather I have implemented my own mental model of how
 make works (then fixed it...).
 
-In addition to traditional 
+In addition to traditional
 
-	.c.o : 
+	.c.o :
 		$(CC) -c ...
 
-GNU make's 'pattern' rules e.g. 
+GNU make's 'pattern' rules e.g.
 
-	%.o : %.c 
+	%.o : %.c
 		$(CC) -c ...
 
 Likewise a subset of GNU makes $(function arg...) syntax is supported.
@@ -1305,9 +1305,9 @@ Variables are probably substituted in different 'phases' of the process
 than in make(1) (or even GNU make), so 'clever' uses will probably not
 work.
 
-UNIXisms abound. 
+UNIXisms abound.
 
-=head1 SEE ALSO 
+=head1 SEE ALSO
 
 L<pmake>
 
@@ -1315,7 +1315,7 @@ L<pmake>
 
 Nick Ing-Simmons
 
-=cut 
+=cut
 
 1;
 #
@@ -1327,7 +1327,7 @@ __DATA__
 .SUFFIXES: .o .c .y .h .sh .cps
 
 .c.o :
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $< 
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
 
 .c   :
 	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ $< $(LDFLAGS) $(LDLIBS)
@@ -1340,5 +1340,3 @@ __DATA__
 .y.c:
 	$(YACC) $<
 	mv y.tab.c $@
-
-
