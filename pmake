@@ -1,39 +1,37 @@
 #!/usr/local/bin/perl -w
-use 5.005;  # Need look-behind assertions
+use 5.005;    # Need look-behind assertions
 
 use Getopt::Std;
 use Make;
 
 my %opt;
 
-getopts('Dgnpf:j:C:',\%opt);
+getopts( 'Dgnpf:j:C:', \%opt );
 
-my $info = Make->new(GNU      => $opt{'g'}, 
-                     Override => { MAKE => "$^X $0" },
-                     Makefile => $opt{'f'}, 
-                     Jobs     => $opt{'j'},
-                     Dir      => $opt{'C'});
+my $info = Make->new(
+	GNU      => $opt{'g'},
+	Override => { MAKE => "$^X $0" },
+	Makefile => $opt{'f'},
+	Jobs     => $opt{'j'},
+	Dir      => $opt{'C'}
+);
 
-if ($opt{'D'})
- {
-  require Data::Dumper;
-  print Data::Dumper::DumperX($info);
-  exit;
- }
+if ( $opt{'D'} ) {
+	require Data::Dumper;
+	print Data::Dumper::DumperX($info);
+	exit;
+}
 
-if ($opt{'p'})
- {
-  $info->Print(@ARGV);  
-  exit;
- }
-if ($opt{'n'})
- {
-  $info->Script(@ARGV);
- }
-else
- {
-  $info->Make(@ARGV);
- }
+if ( $opt{'p'} ) {
+	$info->Print(@ARGV);
+	exit;
+}
+if ( $opt{'n'} ) {
+	$info->Script(@ARGV);
+}
+else {
+	$info->Make(@ARGV);
+}
 
 =head1 NAME
 

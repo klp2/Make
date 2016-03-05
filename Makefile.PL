@@ -12,8 +12,8 @@ my %config = (
 		? (
 			ABSTRACT_FROM => 'lib/Make.pm',
 			AUTHOR        => 'Nick Ing-Simmons',
-		)
-	: ()
+			)
+		: ()
 	),
 	( $ExtUtils::MakeMaker::VERSION >= 6.3002
 		? ( 'LICENSE' => 'perl' )
@@ -44,19 +44,20 @@ my %config = (
 					homepage => 'http://metacpan.org/pod/Make',
 				},
 			}
-		)
+			)
 		: ()
 	)
 );
 
 my %test_requires = (
-	'Test::More' => 1,
+	'Test::More'    => 1,
 	'Test::Compile' => 1.2.1,
 );
 
 if ( eval { ExtUtils::MakeMaker->VERSION(6.64) } ) {
 	$config{TEST_REQUIRES} = \%test_requires;
-} else {
+}
+else {
 	$config{BUILD_REQUIRES} = \%test_requires;
 }
 
