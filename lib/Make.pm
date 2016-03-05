@@ -466,7 +466,7 @@ use Config;
 use Cwd;
 use File::Spec;
 use vars qw($VERSION);
-$VERSION = '1.1.0';
+$VERSION = '1.1.1';
 
 my %date;
 

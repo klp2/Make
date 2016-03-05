@@ -1,4 +1,10 @@
-Changes in 1.0.1
+Changes in 1.1.1
+    clean-up with tidyall/perltidy, add configs for them
+    add tidy related tests
+    use strict and warnings in all tests
+    mostly releasing to get properly CPAN indexed
+
+Changes in 1.1.0
 	Cheat to allow installation on Strawberry Perl 5.22.0
 	add META.yml and META.json
 	modernize Makefile.PL
