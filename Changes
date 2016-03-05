@@ -1,3 +1,9 @@
+Changes in 0.04
+	Cheat to allow installation on Strawberry Perl 5.22.0
+	add META.yml and META.json
+	modernize Makefile.PL
+	add /lib and move Make.pm there
+
 Changes in 0.03
 	Handle $(mktmp,file ...) for Win32
 	Handle dmake-like $(var:s,\,\\,) for Win32
