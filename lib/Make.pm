@@ -1,6 +1,9 @@
 package Make::Rule::Vars;
-use Carp;
 use strict;
+use warnings;
+
+use Carp;
+
 my $generation = 0;    # lexical cross-package scope used!
 
 # Package to handle 'magic' variables pertaining to rules e.g. $@ $* $^ $?
@@ -30,8 +33,10 @@ sub FETCH {
 }
 
 package Make::Rule;
-use Carp;
 use strict;
+use warnings;
+
+use Carp;
 
 # Bottom level 'rule' package
 # An instance exists for each ':' or '::' rule in the makefile.
@@ -277,8 +282,10 @@ sub Print {
 }
 
 package Make::Target;
-use Carp;
 use strict;
+use warnings;
+
+use Carp;
 use Cwd;
 
 #
@@ -454,9 +461,12 @@ sub Print {
 }
 
 package Make;
+
 use 5.005;    # Need look-behind assertions
-use Carp;
 use strict;
+use warnings;
+
+use Carp;
 use Config;
 use Cwd;
 use File::Spec;
