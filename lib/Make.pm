@@ -716,7 +716,11 @@ sub subsvars {
 					local $_ = $self->subsvars($value);
 					$op =~ s/\\/\\\\/g;
 					next unless $op;
-					eval { $op . 'g' };
+
+					#I'm not sure what purpose this eval served, and it
+					#creates some warnings. Removing until I know a good
+					#reason for it's existence.
+					#eval { $op . 'g' };
 					$value = $_;
 				}
 				else {
@@ -949,7 +953,7 @@ sub parse {
 	}
 	open( my $mf, "<", $file ) or croak("Cannot open $file: $!");
 	$self->makefile( $mf, $file );
-	close(Makefile);
+	close($mf);
 
 	# Next bits should really be done 'lazy' on need.
 
