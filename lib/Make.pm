@@ -16,7 +16,7 @@ sub FETCH {
 	my $self = shift;
 	local $_ = shift;
 	my $rule = $$self;
-	return undef unless (/^[\@^<?*]$/);
+	return unless (/^[\@^<?*]$/);
 
 	# print STDERR "FETCH $_ for ",$rule->Name,"\n";
 	return $rule->Name if ( $_ eq '@' );
@@ -26,7 +26,7 @@ sub FETCH {
 
 	# Next one is dubious - I think $< is really more subtle ...
 	return ( $rule->exp_depend )[0] if ( $_ eq '<' );
-	return undef;
+	return;
 }
 
 package Make::Rule;
@@ -514,7 +514,7 @@ sub patmatch {
 	if (/$pat$/) {
 		return $1;
 	}
-	return undef;
+	return;
 }
 
 #
@@ -534,7 +534,7 @@ sub locate {
 			}
 		}
 	}
-	return undef;
+	return;
 }
 
 #
