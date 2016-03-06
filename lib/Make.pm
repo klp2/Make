@@ -742,12 +742,23 @@ sub subsvars {
 			$a =~ s/\./\\./;
 			$value =~ s/$a/$b/;
 		}
+
+		# ($mktmp) appears to be a dmake only macro
+		# its not yet clear to me just how temporary this temporary
+		# file is expected to be, but hopefully we can replace this
+		# with Path::Tiny->tempfile or the use of File::Temp directly
+		# this also only handles one use of the macro, where the content
+		# and filename are provided together. they may be provided
+		# separately, which I don't think we handle yet
 		elsif ( $key =~ /^mktmp,(\S+)\s*(.*)$/ ) {
 			my ( $file, $content ) = ( $1, $2 );
-			open( TMP, ">$file" ) || die "Cannot open $file:$!";
+			open( my $tmp, ">", $file ) or die "Cannot open $file: $!";
 			$content =~ s/\\n//g;
 			print TMP $content;
 			close(TMP);
+
+			# will have to see if we really want to return the filename
+			# here, or if returning the filehandle is the right thing to do
 			$value = $file;
 		}
 		else {
@@ -825,14 +836,13 @@ Makefile:
 		if (/^(-?)include\s+(.*)$/) {
 			my $opt = $1;
 			foreach my $file ( tokenize( $self->subsvars($2) ) ) {
-				local *Makefile;
 				my $path = $self->pathname($file);
-				if ( open( Makefile, "<$path" ) ) {
-					$self->makefile( \*Makefile, $path );
-					close(Makefile);
+				if ( open( my $mf, "<", $path ) ) {
+					$self->makefile( $mf, $path );
+					close($mf);
 				}
 				else {
-					warn "Cannot open $path:$!" unless ( $opt eq '-' );
+					warn "Cannot open $path: $!" unless ( $opt eq '-' );
 				}
 			}
 		}
@@ -926,9 +936,8 @@ sub parse {
 			}
 		}
 	}
-	local (*Makefile);
-	open( Makefile, "<$file" ) || croak("Cannot open $file:$!");
-	$self->makefile( \*Makefile, $file );
+	open( my $mf, "<", $file ) or croak("Cannot open $file: $!");
+	$self->makefile( $mf, $file );
 	close(Makefile);
 
 	# Next bits should really be done 'lazy' on need.
