@@ -51,7 +51,7 @@ my %config = (
 
 my %test_requires = (
 	'Test::More'    => 1,
-	'Test::Compile' => 1.2.1,
+	'Test::Compile' => '1.2.1',
 );
 
 if ( eval { ExtUtils::MakeMaker->VERSION(6.64) } ) {
