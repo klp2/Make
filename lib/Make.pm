@@ -1,3 +1,4 @@
+## no critic
 package Make::Rule::Vars;
 use strict;
 use warnings;
@@ -32,6 +33,7 @@ sub FETCH {
 	return;
 }
 
+## no critic
 package Make::Rule;
 use strict;
 use warnings;
