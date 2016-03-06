@@ -15,3 +15,7 @@ before_install:
   - eval $(curl https://travis-perl.github.io/init) --auto
   - cpanm --notest Perl::Tidy
   - cpanm --notest Test::Code::TidyAll
+  - cpanm --notest Perl::Tidy
+  - cpanm --notest Test::Code::TidyAll
+  - cpanm --notest Test::Perl::Critic
+
