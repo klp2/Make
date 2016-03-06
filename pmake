@@ -1,4 +1,7 @@
 #!/usr/local/bin/perl -w
+use strict;
+use warnings;
+
 use 5.005;    # Need look-behind assertions
 
 use Getopt::Std;
