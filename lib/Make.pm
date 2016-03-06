@@ -61,8 +61,7 @@ sub depend {
 		my $name = $self->Name;
 		my $dep  = shift;
 		confess "dependants $dep are not an array reference" unless ( 'ARRAY' eq ref $dep );
-		my $file;
-		foreach $file (@$dep) {
+		foreach my $file (@$dep) {
 			unless ( exists $self->{DEPHASH}{$file} ) {
 				$self->{DEPHASH}{$file} = 1;
 				push( @{ $self->{DEPEND} }, $file );
@@ -107,9 +106,8 @@ sub out_of_date {
 	my $info  = $self->Info;
 	my @dep   = ();
 	my $tdate = $self->target->date;
-	my $dep;
 	my $count = 0;
-	foreach $dep ( $self->exp_depend ) {
+	foreach my $dep ( $self->exp_depend ) {
 
 		# This is a dumb fix around regex issues with using Strawberry perl.
 		# This may not fix for all versions of Strawberry perl or all versions
@@ -221,10 +219,9 @@ sub Script {
 	return unless $self->out_of_date;
 	my @cmd = $self->exp_command;
 	if (@cmd) {
-		my $file;
 		my $com = ( $^O eq 'MSWin32' ) ? 'rem ' : '# ';
 		print $com, $self->Name, "\n";
-		foreach $file ( $self->exp_command ) {
+		foreach my $file ( $self->exp_command ) {
 			$file =~ s/^[\@\s-]*//;
 			print "$file\n";
 		}
@@ -263,13 +260,13 @@ sub Print {
 	my $self = shift;
 	my $file;
 	print $self->Name, ' ', $self->{KIND}, ' ';
-	foreach $file ( $self->depend ) {
+	foreach my $file ( $self->depend ) {
 		print " \\\n   $file";
 	}
 	print "\n";
 	my @cmd = $self->exp_command;
 	if (@cmd) {
-		foreach $file ( $self->exp_command ) {
+		foreach my $file ( $self->exp_command ) {
 			print "\t", $file, "\n";
 		}
 	}
@@ -392,12 +389,10 @@ sub done {
 sub recurse {
 	my ( $self, $method, @args ) = @_;
 	my $info = $self->Info;
-	my $rule;
-	my $i = 0;
-	foreach $rule ( $self->colon, $self->dcolon ) {
-		my $dep;
+	my $i    = 0;
+	foreach my $rule ( $self->colon, $self->dcolon ) {
 		my $j = 0;
-		foreach $dep ( $rule->exp_depend ) {
+		foreach my $dep ( $rule->exp_depend ) {
 
 			# This is a dumb fix around regex issues with using Strawberry perl.
 			# This may not fix for all versions of Strawberry perl or all versions
@@ -431,7 +426,7 @@ sub Script {
 	my $rule = $self->colon;
 	return if ( $self->done );
 	$self->recurse('Script');
-	foreach $rule ( $self->colon, $self->dcolon ) {
+	foreach my $rule ( $self->colon, $self->dcolon ) {
 		$rule->Script;
 	}
 }
@@ -442,7 +437,7 @@ sub Make {
 	my $rule = $self->colon;
 	return if ( $self->done );
 	$self->recurse('Make');
-	foreach $rule ( $self->colon, $self->dcolon ) {
+	foreach my $rule ( $self->colon, $self->dcolon ) {
 		$rule->Make;
 	}
 }
@@ -452,7 +447,7 @@ sub Print {
 	my $info = $self->Info;
 	return if ( $self->done );
 	my $rule = $self->colon;
-	foreach $rule ( $self->colon, $self->dcolon ) {
+	foreach my $rule ( $self->colon, $self->dcolon ) {
 		$rule->Print;
 	}
 	$self->recurse('Print');
@@ -524,12 +519,10 @@ sub locate {
 	my $self = shift;
 	local $_ = shift;
 	return $_ if ( -r $_ );
-	my $key;
-	foreach $key ( keys %{ $self->{vpath} } ) {
+	foreach my $key ( keys %{ $self->{vpath} } ) {
 		my $Pat;
 		if ( defined( $Pat = patmatch( $key, $_ ) ) ) {
-			my $dir;
-			foreach $dir ( split( /:/, $self->{vpath}{$key} ) ) {
+			foreach my $dir ( split( /:/, $self->{vpath}{$key} ) ) {
 				return "$dir/$_" if ( -r "$dir/$_" );
 			}
 		}
@@ -542,13 +535,12 @@ sub locate {
 #
 sub dotrules {
 	my ($self) = @_;
-	my $t;
-	foreach $t ( keys %{ $self->{Dot} } ) {
+	foreach my $t ( keys %{ $self->{Dot} } ) {
 		my $e = $self->subsvars($t);
 		$self->{Dot}{$e} = delete $self->{Dot}{$t} unless ( $t eq $e );
 	}
 	my (@suffix) = $self->suffixes;
-	foreach $t (@suffix) {
+	foreach my $t (@suffix) {
 		my $d;
 		my $r = delete $self->{Dot}{$t};
 		if ( defined $r ) {
@@ -563,7 +555,7 @@ sub dotrules {
 				$self->Target('%')->dcolon( [ '%' . $t ], scalar $r->colon->command );
 			}
 		}
-		foreach $d (@suffix) {
+		foreach my $d (@suffix) {
 			$r = delete $self->{Dot}{ $t . $d };
 			if ( defined $r ) {
 
@@ -572,7 +564,7 @@ sub dotrules {
 			}
 		}
 	}
-	foreach $t ( keys %{ $self->{Dot} } ) {
+	foreach my $t ( keys %{ $self->{Dot} } ) {
 		push( @{ $self->{Targets} }, delete $self->{Dot}{$t} );
 	}
 }
@@ -632,15 +624,13 @@ sub exists {
 #
 sub patrule {
 	my ( $self, $target ) = @_;
-	my $key;
 
 	# print STDERR "Trying pattern for $target\n";
-	foreach $key ( keys %{ $self->{Pattern} } ) {
+	foreach my $key ( keys %{ $self->{Pattern} } ) {
 		my $Pat;
 		if ( defined( $Pat = patmatch( $key, $target ) ) ) {
 			my $t = $self->{Pattern}{$key};
-			my $rule;
-			foreach $rule ( $t->dcolon ) {
+			foreach my $rule ( $t->dcolon ) {
 				my @dep = $rule->exp_depend;
 				if (@dep) {
 					my $dep = $dep[0];
@@ -834,8 +824,7 @@ Makefile:
 		s/^\s+//;
 		if (/^(-?)include\s+(.*)$/) {
 			my $opt = $1;
-			my $file;
-			foreach $file ( tokenize( $self->subsvars($2) ) ) {
+			foreach my $file ( tokenize( $self->subsvars($2) ) ) {
 				local *Makefile;
 				my $path = $self->pathname($file);
 				if ( open( Makefile, "<$path" ) ) {
@@ -900,13 +889,11 @@ Makefile:
 
 sub pseudos {
 	my $self = shift;
-	my $key;
-	foreach $key (qw(SUFFIXES PHONY PRECIOUS PARALLEL)) {
+	foreach my $key (qw(SUFFIXES PHONY PRECIOUS PARALLEL)) {
 		my $t = delete $self->{Dot}{ '.' . $key };
 		if ( defined $t ) {
-			my $dep;
 			$self->{$key} = {};
-			foreach $dep ( $t->colon->exp_depend ) {
+			foreach my $dep ( $t->colon->exp_depend ) {
 				$self->{$key}{$dep} = 1;
 			}
 		}
@@ -931,8 +918,7 @@ sub parse {
 	else {
 		my @files = qw(makefile Makefile);
 		unshift( @files, 'GNUmakefile' ) if ( $self->{GNU} );
-		my $name;
-		foreach $name (@files) {
+		foreach my $name (@files) {
 			$file = $self->pathname($name);
 			if ( -r $file ) {
 				$self->{Makefile} = $name;
