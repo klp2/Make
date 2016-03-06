@@ -705,7 +705,7 @@ sub subsvars {
 				if ( $op =~ /^s(.).*\1.*\1/ ) {
 					local $_ = $self->subsvars($value);
 					$op =~ s/\\/\\\\/g;
-					eval $op . 'g';
+					eval { $op . 'g' };
 					$value = $_;
 				}
 				else {
