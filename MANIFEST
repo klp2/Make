@@ -10,6 +10,7 @@ bmake
 pmake
 t/make.t
 t/00-compile.t
+t/94-version.t
 t/95-tidyall.t
 t/96-perlcritic.t
 .perlcriticrc
