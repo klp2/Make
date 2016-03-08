@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Carp;
+our $VERSION = '1.1.3';
 
 my $generation = 0;    # lexical cross-package scope used!
 
@@ -39,6 +40,7 @@ use strict;
 use warnings;
 
 use Carp;
+our $VERSION = '1.1.3';
 
 # Bottom level 'rule' package
 # An instance exists for each ':' or '::' rule in the makefile.
@@ -472,8 +474,7 @@ use Carp;
 use Config;
 use Cwd;
 use File::Spec;
-use vars qw($VERSION);
-$VERSION = '1.1.3';
+our $VERSION = '1.1.3';
 
 my %date;
 
