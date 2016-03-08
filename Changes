@@ -1,3 +1,9 @@
+Changes in 1.1.2
+    fixed declaration of minimum Test::Compile version
+        a number of CPANtesters failures occured because
+        the test had an older non-OO version installed
+    use strict, use warnings everywhere, other bits of cleanup
+
 Changes in 1.1.1
     clean-up with tidyall/perltidy, add configs for them
     add tidy related tests

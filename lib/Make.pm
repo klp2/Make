@@ -473,7 +473,7 @@ use Config;
 use Cwd;
 use File::Spec;
 use vars qw($VERSION);
-$VERSION = '1.1.1';
+$VERSION = '1.1.3';
 
 my %date;
 
