@@ -3,9 +3,10 @@ use warnings;
 
 use Test::More;
 
+##no critic
 eval "use Test::Compile";
 plan skip_all => "Test::Compile required for testing compilation"
-  if $@;
+	if $@;
 
 my @scripts = qw(pmake);
 my $test    = Test::Compile->new();
