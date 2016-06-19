@@ -233,12 +233,10 @@ sub needs {
 #   which may need fixing
 #
 sub subsvars {
-	my $self = shift;
-	local $_ = shift;
-	my @var = @_;
+	my ( $self, $target, @var ) = @_;
 	push( @var, $self->{Override}, $self->{Vars}, \%ENV );
-	croak("Trying to subsitute undef value") unless ( defined $_ );
-	while ( /(?<!\$)\$\(([^()]+)\)/ || /(?<!\$)\$([<\@^?*])/ ) {
+	croak("Trying to subsitute undef value") unless ( defined $target );
+	while ( $target =~ /(?<!\$)\$\(([^()]+)\)/ || $target =~ /(?<!\$)\$([<\@^?*])/ ) {
 		my ( $key, $head, $tail ) = ( $1, $`, $' );
 		my $value;
 		if ( $key =~ /^([\w._]+|\S)(?::(.*))?$/ ) {
@@ -250,7 +248,7 @@ sub subsvars {
 				}
 			}
 			unless ( defined $value ) {
-				die "$var not defined in '$_'" unless ( length($var) > 1 );
+				die "$var not defined in '$target'" unless ( length($var) > 1 );
 				$value = '';
 			}
 			if ( defined $op ) {
@@ -277,7 +275,7 @@ sub subsvars {
 			$value = join( ' ', split( '\n', `$1` ) );
 		}
 		elsif ( $key =~ /addprefix\s*([^,]*),(.*)$/ ) {
-			$value = join( ' ', map( $1 . $_, split( '\s+', $2 ) ) );
+			$value = join( ' ', map { $1 . $_ } split( '\s+', $2 ) );
 		}
 		elsif ( $key =~ /notdir\s*(.*)$/ ) {
 			my @files = split( /\s+/, $1 );
@@ -311,20 +309,20 @@ sub subsvars {
 			my ( $file, $content ) = ( $1, $2 );
 			open( my $tmp, ">", $file ) or die "Cannot open $file: $!";
 			$content =~ s/\\n//g;
-			print TMP $content;
-			close(TMP);
+			print $tmp $content;
+			close $tmp;
 
 			# will have to see if we really want to return the filename
 			# here, or if returning the filehandle is the right thing to do
 			$value = $file;
 		}
 		else {
-			warn "Cannot evaluate '$key' in '$_'\n";
+			warn "Cannot evaluate '$key' in '$target'\n";
 		}
-		$_ = "$head$value$tail";
+		$target = "$head$value$tail";
 	}
-	s/\$\$/\$/g;
-	return $_;
+	$target =~ s/\$\$/\$/g;
+	return $target;
 }
 
 #
