@@ -136,7 +136,7 @@ sub recurse {
 				$t->$method(@args);
 			}
 			else {
-				unless ( $info->exists($dep) ) {
+				unless ( $info->target_exists($dep) ) {
 					my $dir = cwd();
 					die "Cannot recurse $method - no target $dep in $dir";
 				}
@@ -177,3 +177,5 @@ sub Print {
 	}
 	$self->recurse('Print');
 }
+
+1;

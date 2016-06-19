@@ -1,6 +1,9 @@
 package Make::Rule;
+
 use strict;
 use warnings;
+
+use Make::Rule::Vars;
 
 use Carp;
 our $VERSION = '1.1.3';
@@ -247,3 +250,5 @@ sub Print {
 	}
 	print "\n";
 }
+
+1;

@@ -6,8 +6,6 @@ use warnings;
 use Carp;
 our $VERSION = '1.1.3';
 
-my $generation = 0;    # lexical cross-package scope used!
-
 # Package to handle 'magic' variables pertaining to rules e.g. $@ $* $^ $?
 # by using tie to this package 'subsvars' can work with array of
 # hash references to possible sources of variable definitions.
@@ -33,3 +31,5 @@ sub FETCH {
 	return ( $rule->exp_depend )[0] if ( $_ eq '<' );
 	return;
 }
+
+1;

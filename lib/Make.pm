@@ -8,6 +8,9 @@ use Carp;
 use Config;
 use Cwd;
 use File::Spec;
+use Make::Rule;
+use Make::Target;
+
 our $VERSION = '1.1.3';
 
 my %date;
@@ -114,6 +117,7 @@ sub dotrules {
 	foreach my $t ( keys %{ $self->{Dot} } ) {
 		push( @{ $self->{Targets} }, delete $self->{Dot}{$t} );
 	}
+    return;
 }
 
 #
@@ -156,7 +160,7 @@ sub date {
 # file - used to see if pattern rules are valid
 # - Needs extending to do vpath lookups
 #
-sub exists {
+sub target_exists {
 	my ( $self, $name ) = @_;
 	return 1 if ( exists $self->{Depend}{$name} );
 	return 1 if defined $self->date($name);
@@ -184,7 +188,7 @@ sub patrule {
 					$dep =~ s/%/$Pat/g;
 
 					# print STDERR "Try $target : $dep\n";
-					if ( $self->exists($dep) ) {
+					if ( $self->target_exists($dep) ) {
 						foreach (@dep) {
 							s/%/$Pat/g;
 						}
@@ -219,6 +223,7 @@ sub needs {
 			}
 		}
 	}
+    return;
 }
 
 #
@@ -510,7 +515,6 @@ sub PrintVars {
 sub exec {
 	my $self = shift;
 	undef %date;
-	$generation++;
 	if ( $^O eq 'MSWin32' ) {
 		my $cwd = cwd();
 		my $ret;
@@ -611,6 +615,8 @@ sub new {
 	$self->parse( $self->{Makefile} );
 	return $self;
 }
+
+1;
 
 =head1 NAME
 
