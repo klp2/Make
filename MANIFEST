@@ -13,6 +13,7 @@ t/00-compile.t
 t/94-version.t
 t/95-tidyall.t
 t/96-perlcritic.t
+t/97-pod.t
 .perlcriticrc
 .perltidyrc
 .tidyallrc
