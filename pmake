@@ -52,11 +52,15 @@ For details see L<Make> for the underlying perl module.
 
 =head1 BUGS
 
+=over
+
 =item *
 
 No B<-k> flag
 
 I strongly suspect there are lots more.
+
+=back
 
 =head1 SEE ALSO
 
@@ -64,7 +68,6 @@ L<Make>, make(1)
 
 =head1 AUTHOR
 
-Nick Ing-Simmons 
+Nick Ing-Simmons
 
 =cut
-
