@@ -1161,6 +1161,13 @@ L<pmake>
 
 Nick Ing-Simmons
 
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (c) 1996-1999 Nick Ing-Simmons.
+
+This program is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
+
 =cut
 
 1;
