@@ -1,9 +1,10 @@
 package Make::Target;
 
-our $VERSION = '1.001003';
-
 use strict;
 use warnings;
+
+our $VERSION = '1.001003';
+
 use Carp;
 use Cwd;
 use Make::Rule;
@@ -33,6 +34,7 @@ sub phony {
 	return $self->Info->phony( $self->Name );
 }
 
+## no critic (RequireArgUnpacking)
 sub colon {
 	my $self = shift;
 	if (@_) {
@@ -84,6 +86,7 @@ sub ProcessColon {
 	my ($self) = @_;
 	my $c = $self->colon;
 	$c->find_commands if $c;
+	return;
 }
 
 sub ExpandTarget {
@@ -102,6 +105,7 @@ sub ExpandTarget {
 			$t->dcolon($d);
 		}
 	}
+	return;
 }
 
 sub done {
@@ -145,6 +149,7 @@ sub recurse {
 			}
 		}
 	}
+	return;
 }
 
 sub Script {
@@ -156,6 +161,7 @@ sub Script {
 	foreach my $rule ( $self->colon, $self->dcolon ) {
 		$rule->Script;
 	}
+	return;
 }
 
 sub Make {
@@ -167,6 +173,7 @@ sub Make {
 	foreach my $rule ( $self->colon, $self->dcolon ) {
 		$rule->Make;
 	}
+	return;
 }
 
 sub Print {
@@ -178,6 +185,7 @@ sub Print {
 		$rule->Print;
 	}
 	$self->recurse('Print');
+	return;
 }
 
 1;

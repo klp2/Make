@@ -1,9 +1,10 @@
 package Make;
 
-our $VERSION = '1.001003';
-
 use strict;
 use warnings;
+
+our $VERSION = '1.001003';
+
 use Carp;
 use Config;
 use Cwd;
@@ -115,6 +116,7 @@ sub dotrules {
 	foreach my $t ( keys %{ $self->{Dot} } ) {
 		push( @{ $self->{Targets} }, delete $self->{Dot}{$t} );
 	}
+	return;
 }
 
 #
@@ -157,7 +159,9 @@ sub date {
 # file - used to see if pattern rules are valid
 # - Needs extending to do vpath lookups
 #
+## no critic (Subroutines::ProhibitBuiltinHomonyms)
 sub exists {
+## use critic
 	my ( $self, $name ) = @_;
 	return 1 if ( exists $self->{Depend}{$name} );
 	return 1 if defined $self->date($name);
@@ -220,6 +224,7 @@ sub needs {
 			}
 		}
 	}
+	return;
 }
 
 #
@@ -228,14 +233,18 @@ sub needs {
 # - recurses till they all go rather than doing one level,
 #   which may need fixing
 #
+## no critic (RequireArgUnpacking)
 sub subsvars {
 	my $self = shift;
 	local $_ = shift;
 	my @var = @_;
+## use critic
 	push( @var, $self->{Override}, $self->{Vars}, \%ENV );
 	croak("Trying to subsitute undef value") unless ( defined $_ );
+	## no critic (Variables::ProhibitMatchVars)
 	while ( /(?<!\$)\$\(([^()]+)\)/ || /(?<!\$)\$([<\@^?*])/ ) {
 		my ( $key, $head, $tail ) = ( $1, $`, $' );
+		## use critic
 		my $value;
 		if ( $key =~ /^([\w._]+|\S)(?::(.*))?$/ ) {
 			my ( $var, $op ) = ( $1, $2 );
@@ -273,7 +282,7 @@ sub subsvars {
 			$value = join( ' ', split( '\n', `$1` ) );
 		}
 		elsif ( $key =~ /addprefix\s*([^,]*),(.*)$/ ) {
-			$value = join( ' ', map( $1 . $_, split( '\s+', $2 ) ) );
+			$value = join( ' ', map { $1 . $_ } split( '\s+', $2 ) );
 		}
 		elsif ( $key =~ /notdir\s*(.*)$/ ) {
 			my @files = split( /\s+/, $1 );
@@ -337,6 +346,7 @@ sub tokenize {
 		last unless (/^\S/);
 		my $token = "";
 		while (/^\S/) {
+			## no critic (Variables::ProhibitMatchVars)
 			if (s/^\$([\(\{])//) {
 				$token .= $&;
 				my $paren = $1 eq '(';
@@ -356,6 +366,7 @@ sub tokenize {
 			elsif (s/^(\$\S?|[^\s\$]+)//) {
 				$token .= $&;
 			}
+			## use critic
 		}
 		push( @result, $token );
 	}
@@ -448,6 +459,7 @@ Makefile:
 			warn "Ignore '$_'\n";
 		}
 	}
+	return;
 }
 
 sub pseudos {
@@ -461,6 +473,7 @@ sub pseudos {
 			}
 		}
 	}
+	return;
 }
 
 sub ExpandTarget {
@@ -471,6 +484,7 @@ sub ExpandTarget {
 	foreach my $t ( @{ $self->{'Targets'} } ) {
 		$t->ProcessColon;
 	}
+	return;
 }
 
 sub parse {
@@ -497,6 +511,7 @@ sub parse {
 
 	$self->pseudos;     # Pull out .SUFFIXES etc.
 	$self->dotrules;    # Convert .c.o into %.o : %.c
+	return;
 }
 
 sub PrintVars {
@@ -506,6 +521,7 @@ sub PrintVars {
 		print "$_ = ", $self->{Vars}{$_}, "\n";
 	}
 	print "\n";
+	return;
 }
 
 sub exec {
@@ -537,9 +553,12 @@ sub exec {
 	}
 }
 
+## no critic (Subroutines::RequireFinalReturn)
 sub NextPass { shift->{Pass}++ }
 sub pass     { shift->{Pass} }
+## use critic
 
+## no critic (RequireArgUnpacking)
 sub apply {
 	my $self   = shift;
 	my $method = shift;
@@ -573,8 +592,11 @@ sub apply {
 		}
 		$t->$method();
 	}
+	return;
 }
+## use critic
 
+## no critic (Subroutines::RequireFinalReturn RequireArgUnpacking)
 sub Script {
 	shift->apply( Script => @_ );
 }
@@ -586,6 +608,7 @@ sub Print {
 sub Make {
 	shift->apply( Make => @_ );
 }
+## use critic
 
 sub new {
 	my ( $class, %args ) = @_;
