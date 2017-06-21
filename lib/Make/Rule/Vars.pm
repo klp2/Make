@@ -1,7 +1,7 @@
 ## no critic
 package Make::Rule::Vars;
 
-our $VERSION = '1.001004';
+our $VERSION = '1.1.4';
 
 use strict;
 use warnings;
