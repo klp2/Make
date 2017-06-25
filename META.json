@@ -47,6 +47,10 @@
             "ExtUtils::MakeMaker" : "0",
             "Test::Compile" : "1.002001",
             "Test::More" : "1.00",
+         }
+      },
+      "develop" : {
+         "requires" : {
             "Test::Pod" : "1.00"
          }
       }
@@ -64,6 +68,6 @@
       },
       "x_IRC" : "irc://irc.perl.org/#perl"
    },
-   "version" : "1.001003",
+   "version" : "1.1.5",
    "x_serialization_backend" : "JSON::PP version 2.27400"
 }

@@ -12,28 +12,28 @@ my %opt;
 getopts( 'Dgnpf:j:C:', \%opt );
 
 my $info = Make->new(
-	GNU      => $opt{'g'},
-	Override => { MAKE => "$^X $0" },
-	Makefile => $opt{'f'},
-	Jobs     => $opt{'j'},
-	Dir      => $opt{'C'}
+    GNU      => $opt{'g'},
+    Override => { MAKE => "$^X $0" },
+    Makefile => $opt{'f'},
+    Jobs     => $opt{'j'},
+    Dir      => $opt{'C'}
 );
 
 if ( $opt{'D'} ) {
-	require Data::Dumper;
-	print Data::Dumper::DumperX($info);
-	exit;
+    require Data::Dumper;
+    print Data::Dumper::DumperX($info);
+    exit;
 }
 
 if ( $opt{'p'} ) {
-	$info->Print(@ARGV);
-	exit;
+    $info->Print(@ARGV);
+    exit;
 }
 if ( $opt{'n'} ) {
-	$info->Script(@ARGV);
+    $info->Script(@ARGV);
 }
 else {
-	$info->Make(@ARGV);
+    $info->Make(@ARGV);
 }
 
 =head1 NAME
