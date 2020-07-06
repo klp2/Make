@@ -1,3 +1,7 @@
+Changes in 1.2.0
+    Rename pmake script to pure-perl-make to avoid conflicting with the BSD pmake
+    (https://github.com/klp2/Make/issues/6)
+
 Changes in 1.1.5
     Clean up MANIFEST, especially to avoid MYMETA.* files ending up in the distribution
     Update perltidy config, get rid of tabs

@@ -3,7 +3,7 @@ package Make;
 use strict;
 use warnings;
 
-our $VERSION = '1.1.5';
+our $VERSION = '1.2.0';
 
 use Carp;
 use Config;
@@ -692,7 +692,7 @@ GNU make's 'pattern' rules e.g.
 
 Likewise a subset of GNU makes $(function arg...) syntax is supported.
 
-Via pmake Make has built perl/Tk from the C<MakeMaker> generated Makefiles...
+Via pure-perl-make Make has built perl/Tk from the C<MakeMaker> generated Makefiles...
 
 =head1 BUGS
 
@@ -713,7 +713,7 @@ UNIXisms abound.
 
 =head1 SEE ALSO
 
-L<pmake>
+L<pure-perl-make>
 
 =head1 AUTHOR
 

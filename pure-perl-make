@@ -38,11 +38,11 @@ else {
 
 =head1 NAME
 
-pmake - a perl 'make' replacement
+pure-perl-make - a perl 'make' replacement
 
 =head1 SYNOPSIS
 
-	pmake [-n] [-g] [-p] [-C directory] targets
+	pure-perl-make [-n] [-g] [-p] [-C directory] targets
 
 =head1 DESCRIPTION
 
