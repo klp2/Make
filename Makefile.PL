@@ -61,7 +61,6 @@ my %FallbackPrereqs = (
     "ExtUtils::MakeMaker" => 0,
     "File::Spec"          => 0,
     "Test::More"          => "1.00",
-    "Test::Pod"           => "1.00",
     "strict"              => 0,
     "warnings"            => 0
 );
