@@ -3,7 +3,6 @@
 .perltidyrc
 .tidyallrc
 .travis.yml
-bmake
 Changes
 lib/Make.pm
 lib/Make/Rule.pm
