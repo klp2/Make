@@ -9,15 +9,24 @@ my %WriteMakefileArgs = (
     "CONFIGURE_REQUIRES" => {
         "ExtUtils::MakeMaker" => 0
     },
-    "DISTNAME"   => "Make",
-    "EXE_FILES"  => [],
-    "LICENSE"    => "perl",
-    "META_MERGE" => {
+    "VERSION_FROM" => "lib/Make.pm",
+    "DISTNAME"     => "Make",
+    "EXE_FILES"    => [],
+    "LICENSE"      => "perl",
+    "META_MERGE"   => {
         dynamic_config => 0,
-        'meta-spec' => { version   => 2 },
-        no_index    => { directory => ['t'] },
-        prereqs     => { runtime   => { requires => { perl => '5.006' } } },
-        resources   => {
+        'meta-spec'    => { version => 2 },
+        no_index       => { directory => ['t'] },
+        prereqs        => {
+            runtime => { requires => { perl => '5.006' } },
+            develop => {
+                requires => {
+                    "Test::Version" => "1.003001",
+                    "Test::Pod"     => "1.00",
+                },
+            },
+        },
+        resources => {
             bugtracker => { web => 'http://github.com/klp2/Make/issues' },
             homepage   => 'http://metacpan.org/pod/Make',
             repository => {
@@ -39,14 +48,9 @@ my %WriteMakefileArgs = (
         "warnings"   => 0
     },
     "TEST_REQUIRES" => {
-        "ExtUtils::MakeMaker" => 0,
-        "Test::More"          => "1.00",
-        "Test::Pod"           => "1.00",
+        "Test::More" => "1.00",
     },
     "VERSION" => "1.2.0",
-    "test"    => {
-        "TESTS" => "t/*.t"
-    }
 );
 
 my %FallbackPrereqs = (
