@@ -45,8 +45,7 @@
       "test" : {
          "requires" : {
             "ExtUtils::MakeMaker" : "0",
-            "Test::Compile" : "1.002001",
-            "Test::More" : "1.00",
+            "Test::More" : "1.00"
          }
       },
       "develop" : {
