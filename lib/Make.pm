@@ -432,10 +432,10 @@ sub process_bit {
 # of a command line, or an 'include' in another makefile.
 #
 sub makefile {
-    my ( $self, $makefile, $name ) = @_;
+    my ( $self, $fh, $name ) = @_;
     print STDERR "Reading $name\n";
     my @bits;
-    local $_ = get_full_line($makefile);
+    local $_ = get_full_line($fh);
     my $was_rule = 0;
     while (1) {
         last unless ( defined $_ );
@@ -458,7 +458,7 @@ sub makefile {
             if ( $depend =~ /^([^;]*);(.*)$/ ) {
                 ( $depend, $cmnds[0] ) = ( $1, $2 );
             }
-            while (<$makefile>) {
+            while (<$fh>) {
                 next if (/^\s*#/);
                 next if (/^\s*$/);
                 last unless (/^\t/);
@@ -466,7 +466,7 @@ sub makefile {
                 if (/\\$/) {
                     chop($_);
                     $_ .= ' ';
-                    $_ .= <$makefile>;
+                    $_ .= <$fh>;
                     redo;
                 }
                 next if (/^\s*$/);
@@ -484,7 +484,7 @@ sub makefile {
         }
     }
     continue {
-        $_        = get_full_line($makefile) if !$was_rule;
+        $_        = get_full_line($fh) if !$was_rule;
         $was_rule = 0;
     }
     $self->process_bit(@$_) for @bits;
