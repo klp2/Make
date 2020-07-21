@@ -14,10 +14,10 @@ my %WriteMakefileArgs = (
     "LICENSE"    => "perl",
     "META_MERGE" => {
         dynamic_config => 0,
-        'meta-spec'    => { version => 2 },
-        no_index       => { directory => ['t'] },
-        prereqs        => { runtime => { requires => { perl => '5.006' } } },
-        resources      => {
+        'meta-spec' => { version   => 2 },
+        no_index    => { directory => ['t'] },
+        prereqs     => { runtime   => { requires => { perl => '5.006' } } },
+        resources   => {
             bugtracker => { web => 'http://github.com/klp2/Make/issues' },
             homepage   => 'http://metacpan.org/pod/Make',
             repository => {

@@ -301,7 +301,7 @@ sub subsvars {
         elsif ( $key =~ /^subst\s+([^,]*),([^,]*),(.*)$/ ) {
             my ( $a, $b ) = ( $1, $2 );
             $value = $3;
-            $a =~ s/\./\\./;
+            $a     =~ s/\./\\./;
             $value =~ s/$a/$b/;
         }
 
