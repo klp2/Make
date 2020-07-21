@@ -11,7 +11,7 @@ my %WriteMakefileArgs = (
     },
     "VERSION_FROM" => "lib/Make.pm",
     "DISTNAME"     => "Make",
-    "EXE_FILES"    => [],
+    "EXE_FILES"    => [ glob 'scripts/*' ],
     "LICENSE"      => "perl",
     "META_MERGE"   => {
         dynamic_config => 0,

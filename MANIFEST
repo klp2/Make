@@ -12,8 +12,8 @@ lib/Make/Target.pm
 Makefile.PL
 MANIFEST			This list of files
 MANIFEST.SKIP
-pure-perl-make
 README
+scripts/pure-perl-make
 t/94-version.t
 t/95-tidyall.t
 t/96-perl-critic.t
