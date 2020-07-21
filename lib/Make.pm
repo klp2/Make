@@ -390,42 +390,67 @@ sub get_full_line {
     return $final;
 }
 
+sub process_bit {
+    my ( $self, $type, @args ) = @_;
+    if ( $type eq 'include' ) {
+        my $opt = $args[0];
+        foreach my $file ( tokenize( $self->subsvars( $args[1] ) ) ) {
+            my $path = $self->pathname($file);
+            if ( open( my $mf, "<", $path ) ) {
+                $self->makefile( $mf, $path );
+                close($mf);
+            }
+            else {
+                warn "Cannot open $path: $!" unless ( $opt eq '-' );
+            }
+        }
+    }
+    elsif ( $type eq 'var' ) {
+        $self->{Vars}{ $args[0] } = ( defined $args[1] ) ? $args[1] : "";
+    }
+    elsif ( $type eq 'vpath' ) {
+        $self->{Vpath}{ $args[0] } = $args[1];
+    }
+    elsif ( $type eq 'rule' ) {
+        my ( $targets, $kind, $depends, $cmnds ) = @args;
+        foreach (@$targets) {
+            my $t     = $self->Target($_);
+            my $index = 0;
+            if ( $kind eq '::' || /%/ ) {
+                $t->dcolon( $depends, $cmnds );
+            }
+            else {
+                $t->colon( $depends, $cmnds );
+            }
+        }
+    }
+    return;
+}
+
 #
 # read makefile (or fragment of one) either as a result
 # of a command line, or an 'include' in another makefile.
 #
 sub makefile {
     my ( $self, $makefile, $name ) = @_;
-    local $_;
     print STDERR "Reading $name\n";
-Makefile:
-    while ( defined( $_ = get_full_line($makefile) ) ) {
+    my @bits;
+    local $_ = get_full_line($makefile);
+    my $was_rule = 0;
+    while (1) {
         last unless ( defined $_ );
         next if (/^\s*#/);
         next if (/^\s*$/);
         s/#.*$//;
         s/^\s+//;
         if (/^(-?)include\s+(.*)$/) {
-            my $opt = $1;
-            foreach my $file ( tokenize( $self->subsvars($2) ) ) {
-                my $path = $self->pathname($file);
-                if ( open( my $mf, "<", $path ) ) {
-                    $self->makefile( $mf, $path );
-                    close($mf);
-                }
-                else {
-                    warn "Cannot open $path: $!" unless ( $opt eq '-' );
-                }
-            }
+            push @bits, [ 'include', $1, $2 ];
         }
         elsif (/^\s*([\w._]+)\s*:?=\s*(.*)$/) {
-            $self->{Vars}{$1} = ( defined $2 ) ? $2 : "";
-
-            #    print STDERR "$1 = ",$self->{Vars}{$1},"\n";
+            push @bits, [ 'var', $1, $2 ];
         }
         elsif (/^vpath\s+(\S+)\s+(.*)$/) {
-            my ( $pat, $path ) = ( $1, $2 );
-            $self->{Vpath}{$pat} = $path;
+            push @bits, [ 'vpath', $1, $2 ];
         }
         elsif (/^\s*([^:]*)(::?)\s*(.*)$/) {
             my ( $target, $kind, $depend ) = ( $1, $2, $3 );
@@ -448,25 +473,21 @@ Makefile:
                 s/^\s+//;
                 push( @cmnds, $_ );
             }
+            $was_rule = 1;
             $depend =~ s/\s\s+/ /;
             $target =~ s/\s\s+/ /;
             my @depend = tokenize($depend);
-            foreach ( tokenize($target) ) {
-                my $t     = $self->Target($_);
-                my $index = 0;
-                if ( $kind eq '::' || /%/ ) {
-                    $t->dcolon( \@depend, \@cmnds );
-                }
-                else {
-                    $t->colon( \@depend, \@cmnds );
-                }
-            }
-            redo Makefile;
+            push @bits, [ 'rule', [ tokenize($target) ], $kind, \@depend, \@cmnds ];
         }
         else {
             warn "Ignore '$_'\n";
         }
     }
+    continue {
+        $_        = get_full_line($makefile) if !$was_rule;
+        $was_rule = 0;
+    }
+    $self->process_bit(@$_) for @bits;
     return;
 }
 
