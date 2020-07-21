@@ -397,7 +397,7 @@ sub process_bit {
         foreach my $file ( tokenize( $self->subsvars( $args[1] ) ) ) {
             my $path = $self->pathname($file);
             if ( open( my $mf, "<", $path ) ) {
-                $self->makefile( $mf, $path );
+                $self->parse_makefile( $mf, $path );
                 close($mf);
             }
             else {
@@ -431,7 +431,7 @@ sub process_bit {
 # read makefile (or fragment of one) either as a result
 # of a command line, or an 'include' in another makefile.
 #
-sub makefile {
+sub parse_makefile {
     my ( $self, $fh, $name ) = @_;
     print STDERR "Reading $name\n";
     my @bits;
@@ -533,7 +533,7 @@ sub parse {
         }
     }
     open( my $mf, "<", $file ) or croak("Cannot open $file: $!");
-    $self->makefile( $mf, $file );
+    $self->parse_makefile( $mf, $file );
     close($mf);
 
     # Next bits should really be done 'lazy' on need.
@@ -660,7 +660,7 @@ sub new {
     $self->{Vars}{CC}     = $Config{cc};
     $self->{Vars}{AR}     = $Config{ar};
     $self->{Vars}{CFLAGS} = $Config{optimize};
-    $self->makefile( \*DATA, __FILE__ );
+    $self->parse_makefile( \*DATA, __FILE__ );
     $self->parse( $self->{Makefile} );
     return $self;
 }
