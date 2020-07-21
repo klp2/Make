@@ -373,6 +373,23 @@ sub tokenize {
     return (wantarray) ? @result : \@result;
 }
 
+sub get_full_line {
+    my ($fh) = @_;
+    my $final = my $line = <$fh>;
+    return if !defined $line;
+    chomp($final);
+    while ( $final =~ /\\$/ ) {
+        chop $final;
+        $final =~ s/\s*$//;
+        $line = <$fh>;
+        last if !defined $line;
+        chomp $line;
+        $line =~ s/^\s*/ /;
+        $final .= $line;
+    }
+    return $final;
+}
+
 #
 # read makefile (or fragment of one) either as a result
 # of a command line, or an 'include' in another makefile.
@@ -382,17 +399,8 @@ sub makefile {
     local $_;
     print STDERR "Reading $name\n";
 Makefile:
-    while (<$makefile>) {
+    while ( defined( $_ = get_full_line($makefile) ) ) {
         last unless ( defined $_ );
-        chomp($_);
-        if (/\\$/) {
-            chop($_);
-            s/\s*$//;
-            my $more = <$makefile>;
-            $more =~ s/^\s*/ /;
-            $_ .= $more;
-            redo;
-        }
         next if (/^\s*#/);
         next if (/^\s*$/);
         s/#.*$//;
