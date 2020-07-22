@@ -112,7 +112,7 @@ sub out_of_date {
 
 #
 # Return list of things rule depends on with variables expanded
-# - May need pathname and vpath processing as well
+# - May need vpath processing as well
 #
 sub exp_depend {
     my $self = shift;
@@ -123,8 +123,6 @@ sub exp_depend {
 
 #
 # Return commands to apply rule with variables expanded
-# - No pathname processing needed, commands should always chdir()
-#   to logical place (at least till we get very clever at bourne shell parsing).
 # - May need vpath processing
 #
 sub exp_command {

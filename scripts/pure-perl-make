@@ -11,12 +11,13 @@ my %opt;
 
 getopts( 'Dgnpf:j:C:', \%opt );
 
+chdir $opt{C} if $opt{C};
+
 my $info = Make->new(
     GNU      => $opt{'g'},
     Vars     => { MAKE => "$^X $0" },
     Makefile => $opt{'f'},
     Jobs     => $opt{'j'},
-    Dir      => $opt{'C'}
 );
 
 if ( $opt{'D'} ) {

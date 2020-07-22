@@ -122,38 +122,14 @@ sub dotrules {
 }
 
 #
-# Return 'full' pathname of name given directory info.
-# - may be the place to do vpath stuff ?
-#
-
-my %pathname;
-
-sub pathname {
-    my ( $self, $name ) = @_;
-    my $hash = $self->{'Pathname'};
-    unless ( exists $hash->{$name} ) {
-        if ( File::Spec->file_name_is_absolute($name) ) {
-            $hash->{$name} = $name;
-        }
-        else {
-            $name =~ s,^\./,,;
-            $hash->{$name} = File::Spec->catfile( $self->{Dir}, $name );
-        }
-    }
-    return $hash->{$name};
-
-}
-
-#
 # Return modified date of name if it exists
 #
 sub date {
     my ( $self, $name ) = @_;
-    my $path = $self->pathname($name);
-    unless ( exists $date{$path} ) {
-        $date{$path} = -M $path;
+    unless ( exists $date{$name} ) {
+        $date{$name} = -M $name;
     }
-    return $date{$path};
+    return $date{$name};
 }
 
 #
@@ -278,7 +254,7 @@ sub subsvars {
             }
         }
         elsif ( $key =~ /wildcard\s*(.*)$/ ) {
-            $value = join( ' ', glob( $self->pathname($1) ) );
+            $value = join( ' ', glob($1) );
         }
         elsif ( $key =~ /shell\s*(.*)$/ ) {
             $value = join( ' ', split( '\n', `$1` ) );
@@ -433,14 +409,13 @@ sub process_ast_bit {
         my $opt = $args[0];
         my ($tokens) = tokenize( $self->subsvars( $args[1] ) );
         foreach my $file (@$tokens) {
-            my $path = $self->pathname($file);
-            if ( open( my $mf, "<", $path ) ) {
+            if ( open( my $mf, "<", $file ) ) {
                 my $ast = parse_makefile($mf);
                 close($mf);
                 $self->process_ast_bit(@$_) for @$ast;
             }
             else {
-                warn "Cannot open $path: $!" unless ( $opt eq '-' );
+                warn "Cannot open $file: $!" unless ( $opt eq '-' );
             }
         }
     }
@@ -550,15 +525,11 @@ sub ExpandTarget {
 
 sub parse {
     my ( $self, $file ) = @_;
-    if ( defined $file ) {
-        $file = $self->pathname($file);
-    }
-    else {
+    if ( !defined $file ) {
         my @files = qw(makefile Makefile);
         unshift( @files, 'GNUmakefile' ) if ( $self->{GNU} );
         foreach my $name (@files) {
-            $file = $self->pathname($name);
-            if ( -r $file ) {
+            if ( -r $name ) {
                 $self->{Makefile} = $name;
                 last;
             }
@@ -591,29 +562,7 @@ sub exec {
     my $self = shift;
     undef %date;
     $generation++;
-    if ( $^O eq 'MSWin32' ) {
-        my $cwd = cwd();
-        my $ret;
-        chdir $self->{Dir};
-        $ret = system(@_);
-        chdir $cwd;
-        return $ret;
-    }
-    else {
-        my $pid = fork;
-        if ($pid) {
-            waitpid $pid, 0;
-            return $?;
-        }
-        else {
-            my $dir = $self->{Dir};
-            chdir($dir) || die "Cannot cd to $dir";
-
-            # handle leading VAR=value here ?
-            # To handle trivial cases like ': libpTk.a' force using /bin/sh
-            exec( "/bin/sh", "-c", @_ ) || confess "Cannot exec " . join( ' ', @_ );
-        }
-    }
+    return system @_;
 }
 
 ## no critic (Subroutines::RequireFinalReturn)
@@ -675,20 +624,16 @@ sub Make {
 
 sub new {
     my ( $class, %args ) = @_;
-    unless ( defined $args{Dir} ) {
-        chomp( $args{Dir} = getcwd() );
-    }
     my $self = bless {
-        Pattern  => {},    # GNU style %.o : %.c
-        Dot      => {},    # Trad style .c.o
-        Vpath    => {},    # vpath %.c info
-        Vars     => {},    # Variables defined in makefile
-        Depend   => {},    # hash of targets
-        Targets  => [],    # ordered version so we can find 1st one
-        Pass     => 0,     # incremented each sweep
-        Pathname => {},    # cache of expanded names
-        Need     => {},
-        Done     => {},
+        Pattern => {},    # GNU style %.o : %.c
+        Dot     => {},    # Trad style .c.o
+        Vpath   => {},    # vpath %.c info
+        Vars    => {},    # Variables defined in makefile
+        Depend  => {},    # hash of targets
+        Targets => [],    # ordered version so we can find 1st one
+        Pass    => 0,     # incremented each sweep
+        Need    => {},
+        Done    => {},
         %args,
     }, $class;
     $self->set_var( 'CC',     $Config{cc} );
@@ -753,10 +698,6 @@ they are a little more stable.
 =head2 new
 
 Class method, takes pairs of arguments in name/value form. Arguments:
-
-=head3 Dir
-
-Starting directory for building. Defaults to current.
 
 =head3 Vars
 
