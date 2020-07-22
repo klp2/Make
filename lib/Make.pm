@@ -397,7 +397,7 @@ sub process_ast_bit {
         foreach my $file ( tokenize( $self->subsvars( $args[1] ) ) ) {
             my $path = $self->pathname($file);
             if ( open( my $mf, "<", $path ) ) {
-                my $ast = parse_makefile( $mf, $path );
+                my $ast = parse_makefile($mf);
                 close($mf);
                 $self->process_ast_bit(@$_) for @$ast;
             }
@@ -433,8 +433,7 @@ sub process_ast_bit {
 # of a command line, or an 'include' in another makefile.
 #
 sub parse_makefile {
-    my ( $fh, $name ) = @_;
-    print STDERR "Reading $name\n";
+    my ($fh) = @_;
     my @ast;
     local $_ = get_full_line($fh);
     my $was_rule = 0;
@@ -526,7 +525,7 @@ sub parse {
         }
     }
     open( my $mf, "<", $file ) or croak("Cannot open $file: $!");
-    my $ast = parse_makefile( $mf, $file );
+    my $ast = parse_makefile($mf);
     $self->process_ast_bit(@$_) for @$ast;
     close($mf);
 
@@ -654,7 +653,7 @@ sub new {
     $self->{Vars}{CC}     = $Config{cc};
     $self->{Vars}{AR}     = $Config{ar};
     $self->{Vars}{CFLAGS} = $Config{optimize};
-    my $ast = parse_makefile( \*DATA, __FILE__ );
+    my $ast = parse_makefile( \*DATA );
     $self->process_ast_bit(@$_) for @$ast;
     $self->parse( $self->{Makefile} );
     return $self;

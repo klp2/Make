@@ -26,7 +26,7 @@ my @ASTs = (
 for my $l (@ASTs) {
     my ( $in, $expected ) = @$l;
     open my $fh, '+<', \$in or die "open: $!";
-    my $got = Make::parse_makefile( $fh, 'name' );
+    my $got = Make::parse_makefile($fh);
     is_deeply $got, $expected or diag explain $got;
 }
 
