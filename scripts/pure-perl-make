@@ -22,14 +22,11 @@ my $info = Make->new(
 if ( $opt{'D'} ) {
     require Data::Dumper;
     print Data::Dumper::DumperX($info);
-    exit;
 }
-
-if ( $opt{'p'} ) {
+elsif ( $opt{'p'} ) {
     $info->Print(@ARGV);
-    exit;
 }
-if ( $opt{'n'} ) {
+elsif ( $opt{'n'} ) {
     $info->Script(@ARGV);
 }
 else {
@@ -42,13 +39,31 @@ pure-perl-make - a perl 'make' replacement
 
 =head1 SYNOPSIS
 
-	pure-perl-make [-n] [-g] [-p] [-C directory] targets
+  pure-perl-make [-D] [-n] [-p] [-g] [-f Makefile] [-C directory] targets
 
 =head1 DESCRIPTION
 
 Performs the same function as make(1) but is written entirely in perl.
 A subset of GNU make extensions is supported.
 For details see L<Make> for the underlying perl module.
+
+=head1 FLAGS
+
+=head2 -D
+
+Don't build, just L<Data::Dumper/DumperX> the L<Make> object.
+
+=head2 -n
+
+Don't build, just print what building would have done.
+
+=head2 -p
+
+Don't build, just print the expanded makefile.
+
+=head2 -g
+
+Turn on L<Make/GNU>.
 
 =head1 BUGS
 
