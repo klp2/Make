@@ -777,6 +777,20 @@ variables expanded.
 Print to current C<select>'ed stream the equivalent bourne shell script
 that a make would perform i.e. the output of C<make -n>.
 
+=head1 FUNCTIONS
+
+=head2 parse_makefile
+
+Given a file-handle, returns array-ref of Abstract Syntax-Tree (AST)
+fragments, representing the contents of that file. Each is an array-ref
+whose first element is the node-type (C<comment>, C<include>, C<vpath>,
+C<var>, C<rule>), followed by relevant data.
+
+=head2 tokenize
+
+Given a line, returns array-ref of the space-separated "tokens". GNU
+make-style function calls will be a single token.
+
 =head1 BUGS
 
 More attention needs to be given to using the package to I<write> makefiles.
