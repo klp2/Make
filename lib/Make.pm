@@ -21,7 +21,9 @@ sub phony {
 
 sub suffixes {
     my ($self) = @_;
-    return keys %{ $self->{'SUFFIXES'} };
+    ## no critic (Subroutines::ProhibitReturnSort)
+    return sort keys %{ $self->{'SUFFIXES'} };
+    ## use critic
 }
 
 #
@@ -68,7 +70,7 @@ sub locate {
     my $self = shift;
     local $_ = shift;
     return $_ if ( -r $_ );
-    foreach my $key ( keys %{ $self->{vpath} } ) {
+    foreach my $key ( sort keys %{ $self->{vpath} } ) {
         my $Pat;
         if ( defined( $Pat = patmatch( $key, $_ ) ) ) {
             foreach my $dir ( split( /:/, $self->{vpath}{$key} ) ) {
@@ -84,7 +86,7 @@ sub locate {
 #
 sub dotrules {
     my ($self) = @_;
-    foreach my $t ( keys %{ $self->{Dot} } ) {
+    foreach my $t ( sort keys %{ $self->{Dot} } ) {
         my $e = $self->subsvars($t);
         $self->{Dot}{$e} = delete $self->{Dot}{$t} unless ( $t eq $e );
     }
@@ -113,7 +115,7 @@ sub dotrules {
             }
         }
     }
-    foreach my $t ( keys %{ $self->{Dot} } ) {
+    foreach my $t ( sort keys %{ $self->{Dot} } ) {
         push( @{ $self->{Targets} }, delete $self->{Dot}{$t} );
     }
     return;
@@ -178,7 +180,7 @@ sub patrule {
     my ( $self, $target ) = @_;
 
     # print STDERR "Trying pattern for $target\n";
-    foreach my $key ( keys %{ $self->{Pattern} } ) {
+    foreach my $key ( sort keys %{ $self->{Pattern} } ) {
         my $Pat;
         if ( defined( $Pat = patmatch( $key, $target ) ) ) {
             my $t = $self->{Pattern}{$key};
@@ -239,7 +241,7 @@ sub subsvars {
     local $_ = shift;
     my @var = @_;
 ## use critic
-    push( @var, $self->{Vars}, \%ENV );
+    push( @var, $self->vars, \%ENV );
     croak("Trying to subsitute undef value") unless ( defined $_ );
     ## no critic (Variables::ProhibitMatchVars)
     while ( /(?<!\$)\$\(([^()]+)\)/ || /(?<!\$)\$([<\@^?*])/ ) {
@@ -414,6 +416,16 @@ sub get_full_line {
     return $final;
 }
 
+sub set_var {
+    my ( $self, $name, $value ) = @_;
+    $self->{Vars}{$name} = $value;
+}
+
+sub vars {
+    my ($self) = @_;
+    $self->{Vars};
+}
+
 sub process_ast_bit {
     my ( $self, $type, @args ) = @_;
     return if $type eq 'comment';
@@ -433,7 +445,7 @@ sub process_ast_bit {
         }
     }
     elsif ( $type eq 'var' ) {
-        $self->{Vars}{ $args[0] } = ( defined $args[1] ) ? $args[1] : "";
+        $self->set_var( $args[0], defined $args[1] ? $args[1] : "" );
     }
     elsif ( $type eq 'vpath' ) {
         $self->{Vpath}{ $args[0] } = $args[1];
@@ -567,8 +579,9 @@ sub parse {
 sub PrintVars {
     my $self = shift;
     local $_;
-    foreach ( keys %{ $self->{Vars} } ) {
-        print "$_ = ", $self->{Vars}{$_}, "\n";
+    my $vars = $self->vars;
+    foreach ( sort keys %$vars ) {
+        print "$_ = ", $vars->{$_}, "\n";
     }
     print "\n";
     return;
@@ -620,7 +633,7 @@ sub apply {
         if (/^(\w+)=(.*)$/) {
 
             # print STDERR "OVERRIDE: $1 = $2\n";
-            $self->{Vars}{$1} = $2;
+            $self->set_var( $1, $2 );
         }
         else {
             push( @targets, $_ );
@@ -678,9 +691,9 @@ sub new {
         Done     => {},
         %args,
     }, $class;
-    $self->{Vars}{CC}     = $Config{cc};
-    $self->{Vars}{AR}     = $Config{ar};
-    $self->{Vars}{CFLAGS} = $Config{optimize};
+    $self->set_var( 'CC',     $Config{cc} );
+    $self->set_var( 'AR',     $Config{ar} );
+    $self->set_var( 'CFLAGS', $Config{optimize} );
     my $ast = parse_makefile( \*DATA );
     $self->process_ast_bit(@$_) for @$ast;
     $self->parse( $self->{Makefile} );
@@ -776,6 +789,21 @@ variables expanded.
 
 Print to current C<select>'ed stream the equivalent bourne shell script
 that a make would perform i.e. the output of C<make -n>.
+
+=head2 set_var
+
+Given a name and value, sets the variable to that.
+
+May gain a "type" parameter to distinguish immediately-expanded from
+recursively-expanded (the default).
+
+=head1 ATTRIBUTES
+
+These are read-only.
+
+=head2 vars
+
+Returns a hash-ref of the current set of variables.
 
 =head1 FUNCTIONS
 
