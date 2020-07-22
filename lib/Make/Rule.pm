@@ -219,6 +219,7 @@ sub Make {
             print "$file\n" unless ( $prefix =~ /\@/ );
             my $code = $info->exec($file);
             if ( $code && $prefix !~ /-/ ) {
+                $code >>= 8;
                 die "Code $code from $file";
             }
         }
