@@ -40,11 +40,11 @@ my @TOKENs = (
     [ ' a $(hi)',            [qw(a $(hi))] ],
     [ ' a $(hi there)',      [ 'a', '$(hi there)' ] ],
     [ ' a ${hi func(call)}', [ 'a', '${hi func(call)}' ] ],
-    [ ' a ${hi func(call}',  [], qr/Mismatched \(\)/ ],
+    [ ' a ${hi func(call}', undef, qr/Mismatched \(\)/ ],
 );
 for my $l (@TOKENs) {
     my ( $in, $expected, $err ) = @$l;
-    my $got = [ eval { Make::tokenize($in) } ];
+    my ($got) = eval { Make::tokenize($in) };
     like $@,        $err || qr/^$/;
     is_deeply $got, $expected or diag explain $got;
 }

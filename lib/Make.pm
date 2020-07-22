@@ -344,7 +344,6 @@ sub tokenize {
     my @result = ();
     while ( $offset < $length ) {
         $offset++ while $offset < $length and substr( $string, $offset, 1 ) =~ /\s/;
-        last unless substr( $string, $offset, 1 ) =~ /\S/;
         my $start_offset = $offset;
         while ( substr( $string, $offset, 1 ) =~ /\S/ ) {
             if ( substr( $string, $offset ) =~ /^\$([\(\{])/ ) {
@@ -365,9 +364,10 @@ sub tokenize {
                 $offset += length $1;
             }
         }
-        push( @result, substr $string, $start_offset, $offset - $start_offset );
+        push @result, substr $string, $start_offset, $offset - $start_offset
+            if $offset > $start_offset;
     }
-    return (wantarray) ? @result : \@result;
+    return ( \@result );
 }
 
 sub get_full_line {
@@ -392,7 +392,8 @@ sub process_ast_bit {
     return if $type eq 'comment';
     if ( $type eq 'include' ) {
         my $opt = $args[0];
-        foreach my $file ( tokenize( $self->subsvars( $args[1] ) ) ) {
+        my ($tokens) = tokenize( $self->subsvars( $args[1] ) );
+        foreach my $file (@$tokens) {
             my $path = $self->pathname($file);
             if ( open( my $mf, "<", $path ) ) {
                 my $ast = parse_makefile($mf);
@@ -468,8 +469,9 @@ sub parse_makefile {
             $was_rule = 1;
             $depend =~ s/\s\s+/ /;
             $target =~ s/\s\s+/ /;
-            my @depend = tokenize($depend);
-            push @ast, [ 'rule', [ tokenize($target) ], $kind, \@depend, \@cmnds ];
+            ($depend) = tokenize($depend);
+            ($target) = tokenize($target);
+            push @ast, [ 'rule', $target, $kind, $depend, \@cmnds ];
         }
         else {
             warn "Ignore '$_'\n";
