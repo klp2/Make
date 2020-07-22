@@ -21,7 +21,10 @@ my @ASTs = (
             [ 'rule', ['.c.o'], ':', [], ['$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<'] ],
         ],
     ],
-    [ ".c.o :\n\techo hi\n# comment\n\n\techo yo\n", [ [ 'rule', ['.c.o'], ':', [], [ 'echo hi', 'echo yo' ] ], ], ],
+    [
+        "# header\n.c.o :\n\techo hi\n# comment\n\n\techo yo\n",
+        [ [ 'comment', 'header' ], [ 'rule', ['.c.o'], ':', [], [ 'echo hi', 'echo yo' ] ], ],
+    ],
 );
 for my $l (@ASTs) {
     my ( $in, $expected ) = @$l;

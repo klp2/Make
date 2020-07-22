@@ -392,6 +392,7 @@ sub get_full_line {
 
 sub process_ast_bit {
     my ( $self, $type, @args ) = @_;
+    return if $type eq 'comment';
     if ( $type eq 'include' ) {
         my $opt = $args[0];
         foreach my $file ( tokenize( $self->subsvars( $args[1] ) ) ) {
@@ -439,12 +440,13 @@ sub parse_makefile {
     my $was_rule = 0;
     while (1) {
         last unless ( defined $_ );
-        next if (/^\s*#/);
-        next if (/^\s*$/);
-        s/#.*$//;
         s/^\s+//;
+        next if !length;
         if (/^(-?)include\s+(.*)$/) {
             push @ast, [ 'include', $1, $2 ];
+        }
+        elsif (s/^#+\s*//) {
+            push @ast, [ 'comment', $_ ];
         }
         elsif (/^\s*([\w._]+)\s*:?=\s*(.*)$/) {
             push @ast, [ 'var', $1, $2 ];
