@@ -239,7 +239,7 @@ sub subsvars {
     local $_ = shift;
     my @var = @_;
 ## use critic
-    push( @var, $self->{Override}, $self->{Vars}, \%ENV );
+    push( @var, $self->{Vars}, \%ENV );
     croak("Trying to subsitute undef value") unless ( defined $_ );
     ## no critic (Variables::ProhibitMatchVars)
     while ( /(?<!\$)\$\(([^()]+)\)/ || /(?<!\$)\$([<\@^?*])/ ) {
@@ -620,7 +620,7 @@ sub apply {
         if (/^(\w+)=(.*)$/) {
 
             # print STDERR "OVERRIDE: $1 = $2\n";
-            $self->{Override}{$1} = $2;
+            $self->{Vars}{$1} = $2;
         }
         else {
             push( @targets, $_ );
@@ -745,9 +745,9 @@ Class method, takes pairs of arguments in name/value form. Arguments:
 
 Starting directory for building. Defaults to current.
 
-=head3 Override
+=head3 Vars
 
-A hash-ref of values that override any variables set in the makefile.
+A hash-ref of values that sets variables, overridable by the makefile.
 
 =head3 Jobs
 

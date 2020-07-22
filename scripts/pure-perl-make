@@ -13,7 +13,7 @@ getopts( 'Dgnpf:j:C:', \%opt );
 
 my $info = Make->new(
     GNU      => $opt{'g'},
-    Override => { MAKE => "$^X $0" },
+    Vars     => { MAKE => "$^X $0" },
     Makefile => $opt{'f'},
     Jobs     => $opt{'j'},
     Dir      => $opt{'C'}
