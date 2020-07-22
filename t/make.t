@@ -33,6 +33,22 @@ for my $l (@ASTs) {
     is_deeply $got, $expected or diag explain $got;
 }
 
+my @TOKENs = (
+    [ "a b c",               [qw(a b c)] ],
+    [ " a b c",              [qw(a b c)] ],
+    [ ' a ${hi}',            [qw(a ${hi})] ],
+    [ ' a $(hi)',            [qw(a $(hi))] ],
+    [ ' a $(hi there)',      [ 'a', '$(hi there)' ] ],
+    [ ' a ${hi func(call)}', [ 'a', '${hi func(call)}' ] ],
+    [ ' a ${hi func(call}',  [], qr/Mismatched \(\)/ ],
+);
+for my $l (@TOKENs) {
+    my ( $in, $expected, $err ) = @$l;
+    my $got = [ eval { Make::tokenize($in) } ];
+    like $@,        $err || qr/^$/;
+    is_deeply $got, $expected or diag explain $got;
+}
+
 is ref($m), 'Make';
 eval { $m->Make('all') };
 is $@, '',;

@@ -351,7 +351,6 @@ sub tokenize {
                 $token .= $&;
                 my $paren = $1 eq '(';
                 my $brace = $1 eq '{';
-                my $count = 1;
                 while ( length($_) && ( $paren || $brace ) ) {
                     s/^.//;
                     $token .= $&;
