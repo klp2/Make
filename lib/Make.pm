@@ -666,7 +666,6 @@ sub new {
         chomp( $args{Dir} = getcwd() );
     }
     my $self = bless {
-        %args,
         Pattern  => {},    # GNU style %.o : %.c
         Dot      => {},    # Trad style .c.o
         Vpath    => {},    # vpath %.c info
@@ -677,6 +676,7 @@ sub new {
         Pathname => {},    # cache of expanded names
         Need     => {},
         Done     => {},
+        %args,
     }, $class;
     $self->{Vars}{CC}     = $Config{cc};
     $self->{Vars}{AR}     = $Config{ar};
@@ -689,43 +689,27 @@ sub new {
 
 =head1 NAME
 
-Make - module for processing makefiles
+Make - Pure-Perl implementation of a somewhat GNU-like make.
 
 =head1 SYNOPSIS
 
-	require Make;
-	my $make = Make->new(...);
-	$make->parse($file);
-	$make->Script(@ARGV)
-	$make->Make(@ARGV)
-	$make->Print(@ARGV)
+    require Make;
+    my $make = Make->new(Makefile => $file);
+    $make->Make(@ARGV);
 
-        my $targ = $make->Target($name);
-        $targ->colon([dependancy...],[command...]);
-        $targ->dolon([dependancy...],[command...]);
-        my @depends  = $targ->colon->depend;
-        my @commands = $targ->colon->command;
+    # to see what it would have done
+    $make->Script(@ARGV);
+
+    # to see an expanded version of the makefile
+    $make->Print(@ARGV);
+
+    my $targ = $make->Target($name);
+    $targ->colon([dependency...],[command...]);
+    $targ->dcolon([dependency...],[command...]);
+    my @depends  = $targ->colon->depend;
+    my @commands = $targ->colon->command;
 
 =head1 DESCRIPTION
-
-Make->new creates an object if C<new(Makefile =E<gt> $file)> is specified
-then it is parsed. If not the usual makefile Makefile sequence is
-used. (If GNU => 1 is passed to new then GNUmakefile is looked for first.)
-
-C<$make-E<gt>Make(target...)> 'makes' the target(s) specified
-(or the first 'real' target in the makefile).
-
-C<$make-E<gt>Print> can be used to 'print' to current C<select>'ed stream
-a form of the makefile with all variables expanded.
-
-C<$make-E<gt>Script(target...)> can be used to 'print' to
-current C<select>'ed stream the equivalent bourne shell script
-that a make would perform i.e. the output of C<make -n>.
-
-There are other methods (used by parse) which can be used to add and
-manipulate targets and their dependants. There is a hierarchy of classes
-which is still evolving. These classes and their methods will be documented when
-they are a little more stable.
 
 The syntax of makefile accepted is reasonably generic, but I have not re-read
 any documentation yet, rather I have implemented my own mental model of how
@@ -743,12 +727,57 @@ GNU make's 'pattern' rules e.g.
 
 Likewise a subset of GNU makes $(function arg...) syntax is supported.
 
-Via pure-perl-make Make has built perl/Tk from the C<MakeMaker> generated Makefiles...
+Via pure-perl-make Make has built perl/Tk from the C<MakeMaker> generated
+Makefiles...
+
+=head1 METHODS
+
+There are other methods (used by parse) which can be used to add and
+manipulate targets and their dependants. There is a hierarchy of classes
+which is still evolving. These classes and their methods will be documented when
+they are a little more stable.
+
+=head2 new
+
+Class method, takes pairs of arguments in name/value form. Arguments:
+
+=head3 Dir
+
+Starting directory for building. Defaults to current.
+
+=head3 Override
+
+A hash-ref of values that override any variables set in the makefile.
+
+=head3 Jobs
+
+Number of concurrent jobs to run while building. Not implemented.
+
+=head3 GNU
+
+If true, then F<GNUmakefile> is looked for first.
+
+=head3 Makefile
+
+The file to parse. If not given, these files will be tried, in order:
+F<GNUmakefile> if L</GNU>, F<makefile>, F<Makefile>.
+
+=head2 Make
+
+Given a target-name, builds the target(s) specified, or the first 'real'
+target in the makefile.
+
+=head2 Print
+
+Print to current C<select>'ed stream a form of the makefile with all
+variables expanded.
+
+=head2 Script
+
+Print to current C<select>'ed stream the equivalent bourne shell script
+that a make would perform i.e. the output of C<make -n>.
 
 =head1 BUGS
-
-At present C<new> must always find a makefile, and
-C<$make-E<gt>parse($file)> can only be used to augment that file.
 
 More attention needs to be given to using the package to I<write> makefiles.
 
