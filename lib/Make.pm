@@ -459,17 +459,10 @@ sub parse_makefile {
             if ( $depend =~ /^([^;]*);(.*)$/ ) {
                 ( $depend, $cmnds[0] ) = ( $1, $2 );
             }
-            while (<$fh>) {
+            while ( defined( $_ = get_full_line($fh) ) ) {
                 next if (/^\s*#/);
                 next if (/^\s*$/);
                 last unless (/^\t/);
-                chop($_);
-                if (/\\$/) {
-                    chop($_);
-                    $_ .= ' ';
-                    $_ .= <$fh>;
-                    redo;
-                }
                 next if (/^\s*$/);
                 s/^\s+//;
                 push( @cmnds, $_ );
