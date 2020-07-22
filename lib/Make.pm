@@ -338,36 +338,34 @@ sub subsvars {
 # Perhaps should also understand "..." and '...' ?
 #
 sub tokenize {
-    local $_ = $_[0];
+    my ( $string, $offset ) = @_;
+    $offset ||= 0;
+    my $length = length $string;
     my @result = ();
-    s/\s+$//;
-    while ( length($_) ) {
-        s/^\s+//;
-        last unless (/^\S/);
-        my $token = "";
-        while (/^\S/) {
-            ## no critic (Variables::ProhibitMatchVars)
-            if (s/^\$([\(\{])//) {
-                $token .= $&;
+    while ( $offset < $length ) {
+        $offset++ while $offset < $length and substr( $string, $offset, 1 ) =~ /\s/;
+        last unless substr( $string, $offset, 1 ) =~ /\S/;
+        my $start_offset = $offset;
+        while ( substr( $string, $offset, 1 ) =~ /\S/ ) {
+            if ( substr( $string, $offset ) =~ /^\$([\(\{])/ ) {
+                $offset += 2;
                 my $paren = $1 eq '(';
                 my $brace = $1 eq '{';
-                while ( length($_) && ( $paren || $brace ) ) {
-                    s/^.//;
-                    $token .= $&;
-                    $paren += ( $& eq '(' );
-                    $paren -= ( $& eq ')' );
-                    $brace += ( $& eq '{' );
-                    $brace -= ( $& eq '}' );
+                while ( $offset < $length && ( $paren || $brace ) ) {
+                    my $char = substr( $string, $offset++, 1 );
+                    $paren += ( $char eq '(' );
+                    $paren -= ( $char eq ')' );
+                    $brace += ( $char eq '{' );
+                    $brace -= ( $char eq '}' );
                 }
-                die "Mismatched {} in $_[0]" if ($brace);
-                die "Mismatched () in $_[0]" if ($paren);
+                die "Mismatched {} in $string" if ($brace);
+                die "Mismatched () in $string" if ($paren);
             }
-            elsif (s/^(\$\S?|[^\s\$]+)//) {
-                $token .= $&;
+            elsif ( substr( $string, $offset ) =~ /^(\$\S?|[^\s\$]+)/ ) {
+                $offset += length $1;
             }
-            ## use critic
         }
-        push( @result, $token );
+        push( @result, substr $string, $start_offset, $offset - $start_offset );
     }
     return (wantarray) ? @result : \@result;
 }
