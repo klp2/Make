@@ -390,15 +390,16 @@ sub get_full_line {
     return $final;
 }
 
-sub process_bit {
+sub process_ast_bit {
     my ( $self, $type, @args ) = @_;
     if ( $type eq 'include' ) {
         my $opt = $args[0];
         foreach my $file ( tokenize( $self->subsvars( $args[1] ) ) ) {
             my $path = $self->pathname($file);
             if ( open( my $mf, "<", $path ) ) {
-                $self->parse_makefile( $mf, $path );
+                my $ast = parse_makefile( $mf, $path );
                 close($mf);
+                $self->process_ast_bit(@$_) for @$ast;
             }
             else {
                 warn "Cannot open $path: $!" unless ( $opt eq '-' );
@@ -432,9 +433,9 @@ sub process_bit {
 # of a command line, or an 'include' in another makefile.
 #
 sub parse_makefile {
-    my ( $self, $fh, $name ) = @_;
+    my ( $fh, $name ) = @_;
     print STDERR "Reading $name\n";
-    my @bits;
+    my @ast;
     local $_ = get_full_line($fh);
     my $was_rule = 0;
     while (1) {
@@ -444,13 +445,13 @@ sub parse_makefile {
         s/#.*$//;
         s/^\s+//;
         if (/^(-?)include\s+(.*)$/) {
-            push @bits, [ 'include', $1, $2 ];
+            push @ast, [ 'include', $1, $2 ];
         }
         elsif (/^\s*([\w._]+)\s*:?=\s*(.*)$/) {
-            push @bits, [ 'var', $1, $2 ];
+            push @ast, [ 'var', $1, $2 ];
         }
         elsif (/^vpath\s+(\S+)\s+(.*)$/) {
-            push @bits, [ 'vpath', $1, $2 ];
+            push @ast, [ 'vpath', $1, $2 ];
         }
         elsif (/^\s*([^:]*)(::?)\s*(.*)$/) {
             my ( $target, $kind, $depend ) = ( $1, $2, $3 );
@@ -477,7 +478,7 @@ sub parse_makefile {
             $depend =~ s/\s\s+/ /;
             $target =~ s/\s\s+/ /;
             my @depend = tokenize($depend);
-            push @bits, [ 'rule', [ tokenize($target) ], $kind, \@depend, \@cmnds ];
+            push @ast, [ 'rule', [ tokenize($target) ], $kind, \@depend, \@cmnds ];
         }
         else {
             warn "Ignore '$_'\n";
@@ -487,8 +488,7 @@ sub parse_makefile {
         $_        = get_full_line($fh) if !$was_rule;
         $was_rule = 0;
     }
-    $self->process_bit(@$_) for @bits;
-    return;
+    return \@ast;
 }
 
 sub pseudos {
@@ -533,7 +533,8 @@ sub parse {
         }
     }
     open( my $mf, "<", $file ) or croak("Cannot open $file: $!");
-    $self->parse_makefile( $mf, $file );
+    my $ast = parse_makefile( $mf, $file );
+    $self->process_ast_bit(@$_) for @$ast;
     close($mf);
 
     # Next bits should really be done 'lazy' on need.
@@ -660,7 +661,8 @@ sub new {
     $self->{Vars}{CC}     = $Config{cc};
     $self->{Vars}{AR}     = $Config{ar};
     $self->{Vars}{CFLAGS} = $Config{optimize};
-    $self->parse_makefile( \*DATA, __FILE__ );
+    my $ast = parse_makefile( \*DATA, __FILE__ );
+    $self->process_ast_bit(@$_) for @$ast;
     $self->parse( $self->{Makefile} );
     return $self;
 }
