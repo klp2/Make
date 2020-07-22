@@ -336,38 +336,65 @@ sub subsvars {
 # Split a string into tokens - like split(/\s+/,...) but handling
 # $(keyword ...) with embedded \s
 # Perhaps should also understand "..." and '...' ?
-#
+## no critic
 sub tokenize {
-    my ( $string, $offset ) = @_;
-    $offset ||= 0;
-    my $length = length $string;
-    my @result = ();
-    while ( $offset < $length ) {
-        $offset++ while $offset < $length and substr( $string, $offset, 1 ) =~ /\s/;
-        my $start_offset = $offset;
-        while ( substr( $string, $offset, 1 ) =~ /\S/ ) {
-            if ( substr( $string, $offset ) =~ /^\$([\(\{])/ ) {
-                $offset += 2;
-                my $paren = $1 eq '(';
-                my $brace = $1 eq '{';
-                while ( $offset < $length && ( $paren || $brace ) ) {
-                    my $char = substr( $string, $offset++, 1 );
-                    $paren += ( $char eq '(' );
-                    $paren -= ( $char eq ')' );
-                    $brace += ( $char eq '{' );
-                    $brace -= ( $char eq '}' );
-                }
-                die "Mismatched {} in $string" if ($brace);
-                die "Mismatched () in $string" if ($paren);
+    my ( $string, $offset, $close_stack ) = @_;
+    $offset      ||= 0;
+    $close_stack ||= [];
+    my $length       = length $string;
+    my @result       = ();
+    my $start_offset = $offset;
+    my $in_token     = 0;
+    my $good_closer;
+
+    while (1) {
+        my $char      = substr $string, $offset, 1;
+        my $is_closer = $char =~ /[\}\)]/;
+        $good_closer = $is_closer && @$close_stack && $char eq $close_stack->[-1];
+        if (    $is_closer
+            and !( @$close_stack and $char eq $close_stack->[-1] )
+            and ( grep $char eq $_, @$close_stack ) )
+        {
+            die "Unexpected '$char' in $string at $offset";
+        }
+        if ( $char =~ /\s/ or $good_closer or $offset == $length ) {
+            push @result, substr $string, $start_offset, $offset - $start_offset
+                if $in_token;
+            $in_token = 0;
+        }
+        else {
+            $start_offset = $offset if !$in_token;
+            $in_token     = 1;
+        }
+        last if $offset >= $length;
+        if ( $char eq '$' ) {
+            my $char2 = substr( $string, ++$offset, 1 );
+            if ( $char2 eq '$' ) {
+                next;    # literal $
             }
-            elsif ( substr( $string, $offset ) =~ /^(\$\S?|[^\s\$]+)/ ) {
-                $offset += length $1;
+            elsif ( $char2 =~ /([\{\(])/ ) {
+                my $opener = $1;
+                my $closer = $opener eq '(' ? ')' : '}';
+                ( my $subtokens, $offset ) = tokenize( $string, $offset + 1, [ @$close_stack, $closer ], );
+                $offset--;    # counter the ++ in continue
+            }
+            else {
+                die "Syntax error: '\$$char2' in '$string' at $offset";
             }
         }
-        push @result, substr $string, $start_offset, $offset - $start_offset
-            if $offset > $start_offset;
+        elsif ($good_closer) {
+            $offset++;
+            last;
+        }
     }
-    return ( \@result );
+    continue {
+        $offset++;
+    }
+    die "Expected '$close_stack->[-1]' in '$string' at end"
+        if !$good_closer
+        and @$close_stack
+        and $offset == $length;
+    return ( \@result, $offset );
 }
 
 sub get_full_line {

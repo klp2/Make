@@ -34,13 +34,17 @@ for my $l (@ASTs) {
 }
 
 my @TOKENs = (
-    [ "a b c",               [qw(a b c)] ],
-    [ " a b c",              [qw(a b c)] ],
-    [ ' a ${hi}',            [qw(a ${hi})] ],
-    [ ' a $(hi)',            [qw(a $(hi))] ],
-    [ ' a $(hi there)',      [ 'a', '$(hi there)' ] ],
-    [ ' a ${hi func(call)}', [ 'a', '${hi func(call)}' ] ],
-    [ ' a ${hi func(call}', undef, qr/Mismatched \(\)/ ],
+    [ "a b c",    [qw(a b c)] ],
+    [ " a b c",   [qw(a b c)] ],
+    [ ' a ${hi}', [qw(a ${hi})] ],
+    [ ' a $(hi)', [qw(a $(hi))] ],
+    [ ' a $(hi there)',        [ 'a', '$(hi there)' ] ],
+    [ ' a ${hi $(call)} b',    [ 'a', '${hi $(call)}', 'b' ] ],
+    [ ' a ${hi $(func call)}', [ 'a', '${hi $(func call)}' ] ],
+    [ ' a ${hi func(call)} b', [ 'a', '${hi func(call)}', 'b' ] ],
+    [ ' a ${hi func(call} b',  [ 'a', '${hi func(call}', 'b' ] ],
+    [ ' a ${hi $(call} b',    undef, qr/Unexpected '}'/ ],
+    [ ' a ${hi $(func call)', undef, qr/Expected '}'/ ],
 );
 for my $l (@TOKENs) {
     my ( $in, $expected, $err ) = @$l;
