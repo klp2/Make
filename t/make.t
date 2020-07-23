@@ -53,6 +53,24 @@ for my $l (@TOKENs) {
     is_deeply $got, $expected or diag explain $got;
 }
 
+my $VARS = {
+    k1 => 'k2',
+    k2 => 'hello',
+};
+my @SUBs = (
+    [ 'none',                       'none' ],
+    [ 'this $(k1) is',              'this k2 is' ],
+    [ 'this $($(k1)) double',       'this hello double' ],
+    [ '$(subst .o,.c,a.o b.o c.o)', 'a.c b.c c.c' ],
+    [ 'not $(absent) is',           'not  is' ],
+);
+for my $l (@SUBs) {
+    my ( $in, $expected, $err ) = @$l;
+    my ($got) = eval { Make::subsvars( $in, $VARS ) };
+    like $@, $err || qr/^$/;
+    is $got, $expected;
+}
+
 is ref($m), 'Make';
 eval { $m->Make('all') };
 is $@, '',;

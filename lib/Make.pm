@@ -87,7 +87,7 @@ sub locate {
 sub dotrules {
     my ($self) = @_;
     foreach my $t ( sort keys %{ $self->{Dot} } ) {
-        my $e = $self->subsvars($t);
+        my $e = subsvars( $t, $self->vars, \%ENV );
         $self->{Dot}{$e} = delete $self->{Dot}{$t} unless ( $t eq $e );
     }
     my (@suffix) = $self->suffixes;
@@ -187,7 +187,7 @@ sub needs {
     my ( $self, $target ) = @_;
     unless ( $self->{Done}{$target} ) {
         if ( exists $self->{Depend}{$target} ) {
-            my @depend = split( /\s+/, $self->subsvars( $self->{Depend}{$target} ) );
+            my @depend = split( /\s+/, subsvars( $self->{Depend}{$target}, $self->vars, \%ENV ) );
             foreach (@depend) {
                 $self->needs($_);
             }
@@ -213,11 +213,9 @@ sub needs {
 #
 ## no critic (RequireArgUnpacking)
 sub subsvars {
-    my $self = shift;
     local $_ = shift;
-    my @var = @_;
+    my @vars_search_list = @_;
 ## use critic
-    push( @var, $self->vars, \%ENV );
     croak("Trying to subsitute undef value") unless ( defined $_ );
     ## no critic (Variables::ProhibitMatchVars)
     while ( /(?<!\$)\$\(([^()]+)\)/ || /(?<!\$)\$([<\@^?*])/ ) {
@@ -226,7 +224,7 @@ sub subsvars {
         my $value;
         if ( $key =~ /^([\w._]+|\S)(?::(.*))?$/ ) {
             my ( $var, $op ) = ( $1, $2 );
-            foreach my $hash (@var) {
+            foreach my $hash (@vars_search_list) {
                 $value = $hash->{$var};
                 if ( defined $value ) {
                     last;
@@ -238,7 +236,7 @@ sub subsvars {
             }
             if ( defined $op ) {
                 if ( $op =~ /^s(.).*\1.*\1/ ) {
-                    local $_ = $self->subsvars($value);
+                    local $_ = subsvars( $value, @vars_search_list );
                     $op =~ s/\\/\\\\/g;
                     next unless $op;
 
@@ -277,13 +275,13 @@ sub subsvars {
             $value = join( ' ', @files );
         }
         elsif ( $key =~ /^subst\s+([^,]*),([^,]*),(.*)$/ ) {
-            my ( $a, $b ) = ( $1, $2 );
+            my ( $from, $to ) = ( $1, $2 );
             $value = $3;
-            $a     =~ s/\./\\./;
-            $value =~ s/$a/$b/;
+            $from  = quotemeta $from;
+            $value =~ s/$from/$to/g;
         }
 
-        # ($mktmp) appears to be a dmake only macro
+        # $(mktmp) appears to be a dmake only macro
         # its not yet clear to me just how temporary this temporary
         # file is expected to be, but hopefully we can replace this
         # with Path::Tiny->tempfile or the use of File::Temp directly
@@ -407,7 +405,7 @@ sub process_ast_bit {
     return if $type eq 'comment';
     if ( $type eq 'include' ) {
         my $opt = $args[0];
-        my ($tokens) = tokenize( $self->subsvars( $args[1] ) );
+        my ($tokens) = tokenize( subsvars( $args[1], $self->vars, \%ENV ) );
         foreach my $file (@$tokens) {
             if ( open( my $mf, "<", $file ) ) {
                 my $ast = parse_makefile($mf);
@@ -759,6 +757,49 @@ C<var>, C<rule>), followed by relevant data.
 
 Given a line, returns array-ref of the space-separated "tokens". GNU
 make-style function calls will be a single token.
+
+=head2 subsvars
+
+Given a piece of text, will substitute any macros in it. Uses the
+remaining args as a list of hashes to search for values.
+
+Also understands these GNU-make style functions:
+
+=head3 wildcard
+
+Returns all its args expanded using C<glob>.
+
+=head3 shell
+
+Runs the command, returns the output with all newlines replaced by spaces.
+
+=head3 addprefix
+
+Prefixes second and succeeding args with first arg.
+
+=head3 notdir
+
+Returns everything after last C</>.
+
+=head3 dir
+
+Returns everything up to last C</>.
+
+=head3 subst
+
+In the third arg, replace every instance of first arg with second. E.g.:
+
+    $(subst .o,.c,a.o b.o c.o)
+    # becomes a.c b.c c.c
+
+=head3 mktmp,(\S+)\s*(.*)$/ ) {
+
+Like the dmake macro, but with mandatory file argument specified after
+an immediate comma (C<,>). The text after further whitespace is inserted
+in that file, whose name is returned. E.g.:
+
+    $(mktmp,file.txt $(shell echo hi))
+    # becomes file.txt, and that file contains "hi"
 
 =head1 BUGS
 
