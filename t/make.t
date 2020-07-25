@@ -54,16 +54,18 @@ for my $l (@TOKENs) {
 }
 
 my $VARS = {
-    k1 => 'k2',
-    k2 => 'hello',
+    k1    => 'k2',
+    k2    => 'hello',
+    files => 'a.o b.o c.o',
 };
 my @SUBs = (
-    [ 'none',                       'none' ],
-    [ 'this $(k1) is',              'this k2 is' ],
-    [ 'this ${k1} is',              'this k2 is' ],
-    [ 'this $($(k1)) double',       'this hello double' ],
-    [ '$(subst .o,.c,a.o b.o c.o)', 'a.c b.c c.c' ],
-    [ 'not $(absent) is',           'not  is' ],
+    [ 'none',                    'none' ],
+    [ 'this $(k1) is',           'this k2 is' ],
+    [ 'this ${k1} is',           'this k2 is' ],
+    [ 'this $($(k1)) double',    'this hello double' ],
+    [ '$(subst .o,.c,$(files))', 'a.c b.c c.c' ],
+    [ 'not $(absent) is',        'not  is' ],
+    [ 'this $(files:.o=.c) is',  'this a.c b.c c.c is' ],
 );
 for my $l (@SUBs) {
     my ( $in, $expected, $err ) = @$l;

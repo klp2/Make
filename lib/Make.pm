@@ -226,20 +226,10 @@ sub subsvars {
                 $value = '';
             }
             if ( defined $op ) {
-                if ( $op =~ /^s(.).*\1.*\1/ ) {
-                    local $_ = subsvars( $value, @vars_search_list );
-                    $op =~ s/\\/\\\\/g;
-                    next unless $op;
-
-                    #I'm not sure what purpose this eval served, and it
-                    #creates some warnings. Removing until I know a good
-                    #reason for it's existence.
-                    #eval { $op . 'g' };
-                    $value = $_;
-                }
-                else {
-                    die "$var:$op = '$value'\n";
-                }
+                my @parts = split /=/, $op, 2;
+                die "Syntax error: expected form x=y in '$op'" if @parts != 2;
+                $parts[0] = quotemeta $parts[0];
+                $value =~ s/$parts[0](?=(?:\s|\z))/$parts[1]/g;
             }
         }
         elsif ( $key =~ /wildcard\s*(.*)$/ ) {
@@ -755,6 +745,12 @@ Given a piece of text, will substitute any macros in it, either a
 single-character macro, or surrounded by either C<{}> or C<()>. These
 can be nested. Uses the remaining args as a list of hashes to search
 for values.
+
+If the macro is of form C<$(varname:a=b)>, then this will be a GNU
+(and others) make-style "substitution reference". First "varname" will
+be expanded. Then all occurrences of "a" at the end of words within
+the expanded text will be replaced with "b". This is intended for file
+suffixes.
 
 Also understands these GNU-make style functions:
 
