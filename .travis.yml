@@ -1,19 +1,18 @@
 language: perl
 
 perl:
-  - "5.32"
-  - "5.26"
-  - "5.14"
-  - "5.8"
-  - "blead"
 
-matrix:
+jobs:
+  include:
+    - perl: "5.32"
+    - perl: "5.26"
+      env: COVERAGE=1
+    - perl: "5.14"
+      env: RELEASE_TESTING=1
+    - perl: "5.8"
+    - perl: "blead"
   allow_failures:
     - perl: blead
-
-env:
-  global:
-    - RELEASE_TESTING=1
 
 before_install:
   - eval $(curl https://travis-perl.github.io/init) --auto
