@@ -236,7 +236,9 @@ sub subsvars {
             $value = join( ' ', glob($1) );
         }
         elsif ( $key =~ /shell\s*(.*)$/ ) {
-            $value = join( ' ', split( '\n', `$1` ) );
+            $value = `$1`;
+            chomp $value;
+            $value = join ' ', split "\n", $value;
         }
         elsif ( $key =~ /addprefix\s*([^,]*),(.*)$/ ) {
             $value = join( ' ', map { $1 . $_ } split( '\s+', $2 ) );
