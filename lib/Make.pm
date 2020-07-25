@@ -216,15 +216,9 @@ sub subsvars {
         if ( $key =~ /^([\w._]+|\S)(?::(.*))?$/ ) {
             my ( $var, $op ) = ( $1, $2 );
             foreach my $hash (@vars_search_list) {
-                $value = $hash->{$var};
-                if ( defined $value ) {
-                    last;
-                }
+                last if defined( $value = $hash->{$var} );
             }
-            unless ( defined $value ) {
-                die "$var not defined in '$_'" unless ( length($var) > 1 );
-                $value = '';
-            }
+            $value = '' if !defined $value;
             if ( defined $op ) {
                 my @parts = split /=/, $op, 2;
                 die "Syntax error: expected form x=y in '$op'" if @parts != 2;
