@@ -60,6 +60,7 @@ my $VARS = {
 my @SUBs = (
     [ 'none',                       'none' ],
     [ 'this $(k1) is',              'this k2 is' ],
+    [ 'this ${k1} is',              'this k2 is' ],
     [ 'this $($(k1)) double',       'this hello double' ],
     [ '$(subst .o,.c,a.o b.o c.o)', 'a.c b.c c.c' ],
     [ 'not $(absent) is',           'not  is' ],

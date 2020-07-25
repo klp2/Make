@@ -205,17 +205,11 @@ sub needs {
     return;
 }
 
-#
-# Substitute $(xxxx) and $x style variable references
-# - should handle ${xxx} as well
-# - recurses till they all go rather than doing one level,
-#   which may need fixing
-#
 sub subsvars {
     ( local $_, my @vars_search_list ) = @_;
     croak("Trying to subsitute undef value") unless ( defined $_ );
     ## no critic (Variables::ProhibitMatchVars)
-    while ( /(?<!\$)\$\(([^()]+)\)/ || /(?<!\$)\$([<\@^?*])/ ) {
+    while ( /(?<!\$)\$\(([^()]+)\)/ || /(?<!\$)\$\{([^{}]+)\}/ || /(?<!\$)\$([<\@^?*])/ ) {
         my ( $key, $head, $tail ) = ( $1, $`, $' );
         ## use critic
         my $value;
@@ -757,8 +751,10 @@ make-style function calls will be a single token.
 
 =head2 subsvars
 
-Given a piece of text, will substitute any macros in it. Uses the
-remaining args as a list of hashes to search for values.
+Given a piece of text, will substitute any macros in it, either a
+single-character macro, or surrounded by either C<{}> or C<()>. These
+can be nested. Uses the remaining args as a list of hashes to search
+for values.
 
 Also understands these GNU-make style functions:
 
