@@ -211,11 +211,8 @@ sub needs {
 # - recurses till they all go rather than doing one level,
 #   which may need fixing
 #
-## no critic (RequireArgUnpacking)
 sub subsvars {
-    local $_ = shift;
-    my @vars_search_list = @_;
-## use critic
+    ( local $_, my @vars_search_list ) = @_;
     croak("Trying to subsitute undef value") unless ( defined $_ );
     ## no critic (Variables::ProhibitMatchVars)
     while ( /(?<!\$)\$\(([^()]+)\)/ || /(?<!\$)\$([<\@^?*])/ ) {
