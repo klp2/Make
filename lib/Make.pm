@@ -205,82 +205,85 @@ sub needs {
     return;
 }
 
+sub evaluate_macro {
+    my ( $key, @vars_search_list ) = @_;
+    my $value;
+    if ( $key =~ /^([\w._]+|\S)(?::(.*))?$/ ) {
+        my ( $var, $op ) = ( $1, $2 );
+        foreach my $hash (@vars_search_list) {
+            last if defined( $value = $hash->{$var} );
+        }
+        $value = '' if !defined $value;
+        if ( defined $op ) {
+            my @parts = split /=/, $op, 2;
+            die "Syntax error: expected form x=y in '$op'" if @parts != 2;
+            $parts[0] = quotemeta $parts[0];
+            $value =~ s/$parts[0](?=(?:\s|\z))/$parts[1]/g;
+        }
+    }
+    elsif ( $key =~ /wildcard\s*(.*)$/ ) {
+        $value = join( ' ', glob($1) );
+    }
+    elsif ( $key =~ /shell\s*(.*)$/ ) {
+        $value = `$1`;
+        chomp $value;
+        $value = join ' ', split "\n", $value;
+    }
+    elsif ( $key =~ /addprefix\s*([^,]*),(.*)$/ ) {
+        $value = join( ' ', map { $1 . $_ } split( '\s+', $2 ) );
+    }
+    elsif ( $key =~ /notdir\s*(.*)$/ ) {
+        my @files = split( /\s+/, $1 );
+        foreach (@files) {
+            s#^.*/([^/]*)$#$1#;
+        }
+        $value = join( ' ', @files );
+    }
+    elsif ( $key =~ /dir\s*(.*)$/ ) {
+        my @files = split( /\s+/, $1 );
+        foreach (@files) {
+            s#^(.*)/[^/]*$#$1#;
+        }
+        $value = join( ' ', @files );
+    }
+    elsif ( $key =~ /^subst\s+([^,]*),([^,]*),(.*)$/ ) {
+        my ( $from, $to ) = ( $1, $2 );
+        $value = $3;
+        $from  = quotemeta $from;
+        $value =~ s/$from/$to/g;
+    }
+
+    # $(mktmp) appears to be a dmake only macro
+    # its not yet clear to me just how temporary this temporary
+    # file is expected to be, but hopefully we can replace this
+    # with Path::Tiny->tempfile or the use of File::Temp directly
+    # this also only handles one use of the macro, where the content
+    # and filename are provided together. they may be provided
+    # separately, which I don't think we handle yet
+    elsif ( $key =~ /^mktmp,(\S+)\s*(.*)$/ ) {
+        my ( $file, $content ) = ( $1, $2 );
+        open( my $tmp, ">", $file ) or die "Cannot open $file: $!";
+        $content =~ s/\\n//g;
+        print TMP $content;
+        close(TMP);
+
+        # will have to see if we really want to return the filename
+        # here, or if returning the filehandle is the right thing to do
+        $value = $file;
+    }
+    else {
+        warn "Cannot evaluate '$key' in '$_'\n";
+    }
+    return $value;
+}
+
 sub subsvars {
     ( local $_, my @vars_search_list ) = @_;
     croak("Trying to subsitute undef value") unless ( defined $_ );
-    ## no critic (Variables::ProhibitMatchVars)
-    while ( /(?<!\$)\$\(([^()]+)\)/ || /(?<!\$)\$\{([^{}]+)\}/ || /(?<!\$)\$([<\@^?*])/ ) {
-        my ( $key, $head, $tail ) = ( $1, $`, $' );
-        ## use critic
-        my $value;
-        if ( $key =~ /^([\w._]+|\S)(?::(.*))?$/ ) {
-            my ( $var, $op ) = ( $1, $2 );
-            foreach my $hash (@vars_search_list) {
-                last if defined( $value = $hash->{$var} );
-            }
-            $value = '' if !defined $value;
-            if ( defined $op ) {
-                my @parts = split /=/, $op, 2;
-                die "Syntax error: expected form x=y in '$op'" if @parts != 2;
-                $parts[0] = quotemeta $parts[0];
-                $value =~ s/$parts[0](?=(?:\s|\z))/$parts[1]/g;
-            }
-        }
-        elsif ( $key =~ /wildcard\s*(.*)$/ ) {
-            $value = join( ' ', glob($1) );
-        }
-        elsif ( $key =~ /shell\s*(.*)$/ ) {
-            $value = `$1`;
-            chomp $value;
-            $value = join ' ', split "\n", $value;
-        }
-        elsif ( $key =~ /addprefix\s*([^,]*),(.*)$/ ) {
-            $value = join( ' ', map { $1 . $_ } split( '\s+', $2 ) );
-        }
-        elsif ( $key =~ /notdir\s*(.*)$/ ) {
-            my @files = split( /\s+/, $1 );
-            foreach (@files) {
-                s#^.*/([^/]*)$#$1#;
-            }
-            $value = join( ' ', @files );
-        }
-        elsif ( $key =~ /dir\s*(.*)$/ ) {
-            my @files = split( /\s+/, $1 );
-            foreach (@files) {
-                s#^(.*)/[^/]*$#$1#;
-            }
-            $value = join( ' ', @files );
-        }
-        elsif ( $key =~ /^subst\s+([^,]*),([^,]*),(.*)$/ ) {
-            my ( $from, $to ) = ( $1, $2 );
-            $value = $3;
-            $from  = quotemeta $from;
-            $value =~ s/$from/$to/g;
-        }
-
-        # $(mktmp) appears to be a dmake only macro
-        # its not yet clear to me just how temporary this temporary
-        # file is expected to be, but hopefully we can replace this
-        # with Path::Tiny->tempfile or the use of File::Temp directly
-        # this also only handles one use of the macro, where the content
-        # and filename are provided together. they may be provided
-        # separately, which I don't think we handle yet
-        elsif ( $key =~ /^mktmp,(\S+)\s*(.*)$/ ) {
-            my ( $file, $content ) = ( $1, $2 );
-            open( my $tmp, ">", $file ) or die "Cannot open $file: $!";
-            $content =~ s/\\n//g;
-            print TMP $content;
-            close(TMP);
-
-            # will have to see if we really want to return the filename
-            # here, or if returning the filehandle is the right thing to do
-            $value = $file;
-        }
-        else {
-            warn "Cannot evaluate '$key' in '$_'\n";
-        }
-        $_ = "$head$value$tail";
-    }
+    1 while s/(?<!\$)\$(?:\(([^()]+)\)|\{([^{}]+)\}|([<\@^?*]))/
+        my ($key) = grep defined, $1, $2, $3;
+        evaluate_macro( $key, @vars_search_list );
+    /e;
     s/\$\$/\$/g;
     return $_;
 }
