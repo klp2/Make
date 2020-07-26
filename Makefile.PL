@@ -21,8 +21,10 @@ my %WriteMakefileArgs = (
             runtime => { requires => { perl => '5.006' } },
             develop => {
                 requires => {
-                    "Test::Version" => "1.003001",
-                    "Test::Pod"     => "1.00",
+                    "Test::Version"       => "1.003001",
+                    "Test::Pod"           => "1.00",
+                    "Test::Code::TidyAll" => "0.41",
+                    "Test::Perl::Critic"  => "1.02",
                 },
             },
         },
