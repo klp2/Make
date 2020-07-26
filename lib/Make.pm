@@ -18,7 +18,8 @@ my $generation = 0;    # lexical cross-package scope used!
 
 ## no critic (Subroutines::RequireArgUnpacking Subroutines::RequireFinalReturn)
 sub load_modules {
-    for my $pkg (@_) {
+    for (@_) {
+        my $pkg = $_;    # to not mutate inputs
         $pkg =~ s#::#/#g;
         ## no critic (Modules::RequireBarewordIncludes)
         eval { require "$pkg.pm"; 1 } or die;
