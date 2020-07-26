@@ -101,5 +101,11 @@ EOF
 $m->Make('all');
 my $contents = do { local $/; open my $fh, '<', $tempfile; <$fh> };
 is $contents, "value\n";
+my $other_rule = $m->Target('other')->colon;
+my $got        = $other_rule->command;
+is_deeply $got, ['@echo $(var) >"$(tempfile)"'] or diag explain $got;
+my $all_rule = $m->Target('all')->colon;
+$got = $all_rule->exp_depend;
+is_deeply $got, ['other'] or diag explain $got;
 
 done_testing;
