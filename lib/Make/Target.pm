@@ -119,19 +119,6 @@ sub recurse {
     foreach my $rule ( $self->colon, $self->dcolon ) {
         my $j = 0;
         foreach my $dep ( $rule->exp_depend ) {
-
-            # This is a dumb fix around regex issues with using Strawberry perl.
-            # This may not fix for all versions of Strawberry perl or all versions
-            # of windows, but is a hacky work-around until a real fix can be implemented
-            if ( ( $dep =~ m/libConfig.pm/ ) and ( $^O eq 'MSWin32' ) ) {
-                print STDERR "we got here with $dep\n";
-                $dep =~ s#libConfig.pm#lib//Config.pm#;
-            }
-            if ( ( $dep =~ m/COREconfig.h/ ) and ( $^O eq 'MSWin32' ) ) {
-                print STDERR "we got here with $dep\n";
-                $dep =~ s#COREconfig.h#CORE//config.h#;
-            }
-
             my $t = $info->{Depend}{$dep};
             if ( defined $t ) {
                 $t->$method(@args);

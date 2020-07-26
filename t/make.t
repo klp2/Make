@@ -91,8 +91,9 @@ is $@, '',;
 $m = Make->new( Makefile => \sprintf <<'EOF', $tempfile );
 var = value
 tempfile = %s
+targets = other
 
-all: other
+all: $(targets)
 
 other:
 	@echo $(var) >"$(tempfile)"
