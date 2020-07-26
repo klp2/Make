@@ -550,7 +550,7 @@ sub apply {
             print STDERR join( ' ', $method, @_ ), "\n";
             die "Cannot '$method' - no target $_";
         }
-        $t->$method();
+        $t->recurse($method);
     }
     return;
 }

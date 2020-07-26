@@ -79,8 +79,7 @@ sub Info {
 
 sub done {
     my $self = shift;
-    my $info = $self->Info;
-    my $pass = $info->pass;
+    my $pass = $self->Info->pass;
     return 1 if ( $self->{Pass} == $pass );
     $self->{Pass} = $pass;
     return 0;
@@ -88,59 +87,21 @@ sub done {
 
 sub recurse {
     my ( $self, $method, @args ) = @_;
+    return if $self->done;
     my $info = $self->Info;
-    my $i    = 0;
     foreach my $rule ( $self->colon, $self->dcolon ) {
-        my $j = 0;
         foreach my $dep ( @{ $rule->depend } ) {
-            my $t = $info->{Depend}{$dep};
+            my $t = $info->Target($dep);
             if ( defined $t ) {
-                $t->$method(@args);
+                $t->recurse( $method, @args );
             }
-            else {
-                unless ( $info->exists($dep) ) {
-                    my $dir = cwd();
-                    die "Cannot recurse $method - no target $dep in $dir";
-                }
+            elsif ( !$info->exists($dep) ) {
+                my $dir = cwd();
+                die "Cannot recurse $method - no target $dep in $dir";
             }
         }
+        $rule->$method(@args);
     }
-    return;
-}
-
-sub Script {
-    my $self = shift;
-    my $info = $self->Info;
-    my $rule = $self->colon;
-    return if ( $self->done );
-    $self->recurse('Script');
-    foreach my $rule ( $self->colon, $self->dcolon ) {
-        $rule->Script;
-    }
-    return;
-}
-
-sub Make {
-    my $self = shift;
-    my $info = $self->Info;
-    my $rule = $self->colon;
-    return if ( $self->done );
-    $self->recurse('Make');
-    foreach my $rule ( $self->colon, $self->dcolon ) {
-        $rule->Make;
-    }
-    return;
-}
-
-sub Print {
-    my $self = shift;
-    my $info = $self->Info;
-    return if ( $self->done );
-    my $rule = $self->colon;
-    foreach my $rule ( $self->colon, $self->dcolon ) {
-        $rule->Print;
-    }
-    $self->recurse('Print');
     return;
 }
 
