@@ -45,7 +45,7 @@ sub colon {
                 # merging an existing rule
                 my $other = shift;
                 $dep->depend( scalar $other->depend );
-                $dep->command( scalar $other->command );
+                $dep->command( $other->command );
             }
             else {
                 $dep->depend(shift);
@@ -56,12 +56,7 @@ sub colon {
             $self->{COLON} = ( @_ == 1 ) ? shift->clone($self) : Make::Rule->new( $self, ':', @_ );
         }
     }
-    if ( exists $self->{COLON} ) {
-        return (wantarray) ? ( $self->{COLON} ) : $self->{COLON};
-    }
-    else {
-        return (wantarray) ? () : undef;
-    }
+    return exists $self->{COLON} ? $self->{COLON} : ();
 }
 
 sub dcolon {

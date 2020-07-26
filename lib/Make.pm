@@ -115,7 +115,7 @@ sub dotrules {
             }
             else {
                 # print STDERR "Build \% : \%$t\n";
-                $self->Target('%')->dcolon( [ '%' . $t ], scalar $r->colon->command );
+                $self->Target('%')->dcolon( [ '%' . $t ], $r->colon->command );
             }
         }
         foreach my $d (@suffix) {
@@ -123,7 +123,7 @@ sub dotrules {
             if ( defined $r ) {
 
                 # print STDERR "Build \%$d : \%$t\n";
-                $self->Target( '%' . $d )->dcolon( [ '%' . $t ], scalar $r->colon->command );
+                $self->Target( '%' . $d )->dcolon( [ '%' . $t ], $r->colon->command );
             }
         }
     }
@@ -183,7 +183,7 @@ sub patrule {
                         foreach (@dep) {
                             s/%/$Pat/g;
                         }
-                        return ( \@dep, scalar $rule->command );
+                        return ( \@dep, $rule->command );
                     }
                 }
             }
@@ -620,7 +620,7 @@ Make - Pure-Perl implementation of a somewhat GNU-like make.
     $targ->colon([dependency...],[command...]);
     $targ->dcolon([dependency...],[command...]);
     my @depends  = $targ->colon->depend;
-    my @commands = $targ->colon->command;
+    my @commands = @{ $targ->colon->command };
 
 =head1 DESCRIPTION
 

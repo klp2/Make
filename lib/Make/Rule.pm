@@ -67,7 +67,7 @@ sub command {
             }
         }
     }
-    return (wantarray) ? @{ $self->{COMMAND} } : $self->{COMMAND};
+    return $self->{COMMAND};
 }
 
 #
@@ -76,7 +76,6 @@ sub command {
 # In list context the things we are out-of-date with e.g. magic $? variable
 #
 sub out_of_date {
-    my $array = wantarray;
     my $self  = shift;
     my $info  = $self->Info;
     my @dep   = ();
@@ -100,11 +99,11 @@ sub out_of_date {
         if ( !defined($date) || !defined($tdate) || $date < $tdate ) {
 
             # warn $self->Name." ood wrt ".$dep."\n";
-            return 1 unless $array;
+            return 1 unless wantarray;
             push( @dep, $dep );
         }
     }
-    return @dep if $array;
+    return @dep if wantarray;
 
     # Note special case of no dependencies means it is always  out-of-date!
     return !$count;
@@ -131,7 +130,7 @@ sub exp_command {
     my $base = $self->Name;
     my %var;
     tie %var, 'Make::Rule::Vars', $self;
-    my @cmd = map( Make::subsvars( $_, $info->function_packages, \%var, $info->vars, \%ENV ), $self->command );
+    my @cmd = map( Make::subsvars( $_, $info->function_packages, \%var, $info->vars, \%ENV ), @{ $self->command } );
     return (wantarray) ? @cmd : \@cmd;
 }
 
