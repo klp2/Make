@@ -193,7 +193,6 @@ sub Script {
 #
 sub Make {
     my $self = shift;
-    my $file;
     return unless ( $self->out_of_date );
     my @cmd  = $self->exp_command;
     my $info = $self->Info;

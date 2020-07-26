@@ -518,39 +518,37 @@ sub pass     { shift->{Pass} }
 ## use critic
 
 ## no critic (RequireArgUnpacking)
+sub parse_args {
+    my ( @vars, @targets );
+    foreach (@_) {
+        if (/^(\w+)=(.*)$/) {
+            push @vars, [ $1, $2 ];
+        }
+        else {
+            push @targets, $_;
+        }
+    }
+    return \@vars, \@targets;
+}
+## use critic
+
+## no critic (RequireArgUnpacking)
 sub apply {
     my $self   = shift;
     my $method = shift;
     $self->NextPass;
-    my @targets = ();
-
-    # print STDERR join(' ',Apply => $method,@_),"\n";
-    foreach (@_) {
-        if (/^(\w+)=(.*)$/) {
-
-            # print STDERR "OVERRIDE: $1 = $2\n";
-            $self->set_var( $1, $2 );
-        }
-        else {
-            push( @targets, $_ );
-        }
-    }
-    #
-    # This expansion is dubious as it alters the database
-    # as a function of current values of Override.
-    #
+    my ( $vars, $targets ) = parse_args(@_);
+    $self->set_var(@$_) for @$vars;    # print STDERR "OVERRIDE: $1 = $2\n";
     foreach my $t ( @{ $self->{'Targets'} } ) {
         my $c = $t->colon;
         $c->find_commands if $c;
     }
-    @targets = ( $self->{'Targets'}[0] )->Name unless (@targets);
-
-    # print STDERR join(' ',Targets => $method,map($_->Name,@targets)),"\n";
-    foreach (@targets) {
-        my $t = $self->{Depend}{$_};
+    @$targets = ( $self->{'Targets'}[0] )->Name unless (@$targets);
+    foreach (@$targets) {
+        my $t = $self->Target($_);
         unless ( defined $t ) {
             print STDERR join( ' ', $method, @_ ), "\n";
-            die "Cannot `$method' - no target $_";
+            die "Cannot '$method' - no target $_";
         }
         $t->$method();
     }
