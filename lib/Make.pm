@@ -488,10 +488,18 @@ sub parse {
             }
         }
     }
-    open( my $mf, "<", $file ) or croak("Cannot open $file: $!");
-    my $ast = parse_makefile($mf);
+    my $fh;
+    if ( ref $file eq 'SCALAR' ) {
+        open my $tfh, "+<", $file;
+        $fh = $tfh;
+    }
+    else {
+        open( my $mf, "<", $file ) or croak("Cannot open $file: $!");
+        $fh = $mf;
+    }
+    my $ast = parse_makefile($fh);
     $self->process_ast_bit(@$_) for @$ast;
-    close($mf);
+    undef $fh;
 
     # Next bits should really be done 'lazy' on need.
 
@@ -670,6 +678,8 @@ If true, then F<GNUmakefile> is looked for first.
 
 The file to parse. If not given, these files will be tried, in order:
 F<GNUmakefile> if L</GNU>, F<makefile>, F<Makefile>.
+
+If a scalar-ref, will be makefile text.
 
 =head3 FunctionPackages
 

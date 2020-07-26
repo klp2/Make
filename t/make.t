@@ -88,4 +88,17 @@ is ref($m), 'Make';
 eval { $m->Make('all') };
 is $@, '',;
 
+$m = Make->new( Makefile => \sprintf <<'EOF', $tempfile );
+var = value
+tempfile = %s
+
+all: other
+
+other:
+	@echo $(var) >"$(tempfile)"
+EOF
+$m->Make('all');
+my $contents = do { local $/; open my $fh, '<', $tempfile; <$fh> };
+is $contents, "value\n";
+
 done_testing;
