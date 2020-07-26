@@ -71,6 +71,10 @@ my @SUBs = (
     [ '$(shell echo hi; echo there)',                   'hi there' ],
     [ "\$(shell \"$^X\" -pe 1 \$(mktmp,$tempfile hi))", 'hi' ],
     [ "\$(shell \"$^X\" -pe 1 \$(mktmp hi))",           'hi' ],
+    [ '$(wildcard Chan* RE*)',                          'Changes README' ],
+    [ '$(addprefix x/,1 2)',                            'x/1 x/2' ],
+    [ '$(notdir x/1 x/2)',                              '1 2' ],
+    [ '$(dir x/1 y/2 3)',                               'x y ./' ],
 );
 for my $l (@SUBs) {
     my ( $in, $expected, $err ) = @$l;

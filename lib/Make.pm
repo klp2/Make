@@ -232,19 +232,21 @@ sub evaluate_macro {
         $value = join ' ', split "\n", $value;
     }
     elsif ( $key =~ /addprefix\s*([^,]*),(.*)$/ ) {
-        $value = join( ' ', map { $1 . $_ } split( '\s+', $2 ) );
+        ## no critic (BuiltinFunctions::RequireBlockMap)
+        $value = join ' ', map $1 . $_, split /\s+/, $2;
+        ## use critic
     }
     elsif ( $key =~ /notdir\s*(.*)$/ ) {
         my @files = split( /\s+/, $1 );
         foreach (@files) {
-            s#^.*/([^/]*)$#$1#;
+            s#^.*/##;
         }
         $value = join( ' ', @files );
     }
     elsif ( $key =~ /dir\s*(.*)$/ ) {
         my @files = split( /\s+/, $1 );
         foreach (@files) {
-            s#^(.*)/[^/]*$#$1#;
+            $_ = './' unless s#^(.*)/[^/]*$#$1#;
         }
         $value = join( ' ', @files );
     }
@@ -760,7 +762,10 @@ Runs the command, returns the output with all newlines replaced by spaces.
 
 =head3 addprefix
 
-Prefixes second and succeeding args with first arg.
+Prefixes each word in the second arg with first arg:
+
+    $(addprefix x/,1 2)
+    # becomes x/1 x/2
 
 =head3 notdir
 
@@ -768,7 +773,7 @@ Returns everything after last C</>.
 
 =head3 dir
 
-Returns everything up to last C</>.
+Returns everything up to last C</>. If no C</>, returns C<./>.
 
 =head3 subst
 
