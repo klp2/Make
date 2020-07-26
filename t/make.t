@@ -3,6 +3,7 @@ use warnings;
 use Test::More;
 use Make;
 use File::Spec;
+use File::Temp qw(tempfile);
 
 my $m = Make->new( Makefile => "Makefile" );
 
@@ -53,20 +54,23 @@ for my $l (@TOKENs) {
     is_deeply $got, $expected or diag explain $got;
 }
 
+my ( undef, $tempfile ) = tempfile;
 my $VARS = {
     k1    => 'k2',
     k2    => 'hello',
     files => 'a.o b.o c.o',
 };
 my @SUBs = (
-    [ 'none',                         'none' ],
-    [ 'this $(k1) is',                'this k2 is' ],
-    [ 'this ${k1} is',                'this k2 is' ],
-    [ 'this $($(k1)) double',         'this hello double' ],
-    [ '$(subst .o,.c,$(files))',      'a.c b.c c.c' ],
-    [ 'not $(absent) is',             'not  is' ],
-    [ 'this $(files:.o=.c) is',       'this a.c b.c c.c is' ],
-    [ '$(shell echo hi; echo there)', 'hi there' ],
+    [ 'none',                                           'none' ],
+    [ 'this $(k1) is',                                  'this k2 is' ],
+    [ 'this ${k1} is',                                  'this k2 is' ],
+    [ 'this $($(k1)) double',                           'this hello double' ],
+    [ '$(subst .o,.c,$(files))',                        'a.c b.c c.c' ],
+    [ 'not $(absent) is',                               'not  is' ],
+    [ 'this $(files:.o=.c) is',                         'this a.c b.c c.c is' ],
+    [ '$(shell echo hi; echo there)',                   'hi there' ],
+    [ "\$(shell \"$^X\" -pe 1 \$(mktmp,$tempfile hi))", 'hi' ],
+    [ "\$(shell \"$^X\" -pe 1 \$(mktmp hi))",           'hi' ],
 );
 for my $l (@SUBs) {
     my ( $in, $expected, $err ) = @$l;

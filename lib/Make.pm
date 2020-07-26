@@ -10,9 +10,11 @@ use Config;
 use Cwd;
 use File::Spec;
 use Make::Target ();
+use File::Temp;
 
 my %date;
 my $generation = 0;    # lexical cross-package scope used!
+my @temp_handles;      # so they don't get destroyed before end of program
 
 sub phony {
     my ( $self, $name ) = @_;
@@ -252,23 +254,18 @@ sub evaluate_macro {
         $from  = quotemeta $from;
         $value =~ s/$from/$to/g;
     }
-
-    # $(mktmp) appears to be a dmake only macro
-    # its not yet clear to me just how temporary this temporary
-    # file is expected to be, but hopefully we can replace this
-    # with Path::Tiny->tempfile or the use of File::Temp directly
-    # this also only handles one use of the macro, where the content
-    # and filename are provided together. they may be provided
-    # separately, which I don't think we handle yet
-    elsif ( $key =~ /^mktmp,(\S+)\s*(.*)$/ ) {
-        my ( $file, $content ) = ( $1, $2 );
-        open( my $tmp, ">", $file ) or die "Cannot open $file: $!";
-        $content =~ s/\\n//g;
-        print TMP $content;
-        close(TMP);
-
-        # will have to see if we really want to return the filename
-        # here, or if returning the filehandle is the right thing to do
+    elsif ( $key =~ /^mktmp(?:,(\S+))?\s*(.*)$/ ) {
+        my ( $file, $content, $fh ) = ( $1, $2 );
+        if ( defined $file ) {
+            open( my $tmp, ">", $file ) or die "Cannot open $file: $!";
+            $fh = $tmp;
+        }
+        else {
+            $fh = File::Temp->new;    # default UNLINK = 1
+            push @temp_handles, $fh;
+            $file = $fh->filename;
+        }
+        print $fh $content;
         $value = $file;
     }
     else {
@@ -780,7 +777,7 @@ In the third arg, replace every instance of first arg with second. E.g.:
     $(subst .o,.c,a.o b.o c.o)
     # becomes a.c b.c c.c
 
-=head3 mktmp,(\S+)\s*(.*)$/ ) {
+=head3 mktmp
 
 Like the dmake macro, but with mandatory file argument specified after
 an immediate comma (C<,>). The text after further whitespace is inserted
@@ -788,6 +785,9 @@ in that file, whose name is returned. E.g.:
 
     $(mktmp,file.txt $(shell echo hi))
     # becomes file.txt, and that file contains "hi"
+
+    $(mktmp $(shell echo hi))
+    # becomes a temporary filename, and that file contains "hi"
 
 =head1 BUGS
 
