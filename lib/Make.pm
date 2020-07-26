@@ -11,6 +11,7 @@ use Cwd;
 use File::Spec;
 use Make::Target ();
 use File::Temp;
+require Make::Functions;
 
 my %date;
 my $generation = 0;    # lexical cross-package scope used!
@@ -221,16 +222,15 @@ sub evaluate_macro {
     my ( $key, $function_packages, @vars_search_list ) = @_;
     my $value;
     if ( $key =~ /^([\w._]+|\S)(?::(.*))?$/ ) {
-        my ( $var, $op ) = ( $1, $2 );
+        my ( $var, $subst ) = ( $1, $2 );
         foreach my $hash (@vars_search_list) {
             last if defined( $value = $hash->{$var} );
         }
         $value = '' if !defined $value;
-        if ( defined $op ) {
-            my @parts = split /=/, $op, 2;
-            die "Syntax error: expected form x=y in '$op'" if @parts != 2;
-            $parts[0] = quotemeta $parts[0];
-            $value =~ s/$parts[0](?=(?:\s|\z))/$parts[1]/g;
+        if ( defined $subst ) {
+            my @parts = split /=/, $subst, 2;
+            die "Syntax error: expected form x=y in '$subst'" if @parts != 2;
+            $value = join ' ', Make::Functions::patsubst( undef, join ",", @parts, $value );
         }
     }
     elsif ( $key =~ /([\w._]+)(?:,(\S+))?\s+(.*)$/ ) {

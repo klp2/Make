@@ -45,10 +45,17 @@ sub dir {
 
 sub subst {
     my ( $first_comma, $text_input ) = @_;
-    $text_input =~ /([^,]*),([^,]*),(.*)/;
-    my ( $from, $to, $value ) = ( $1, $2, $3 );
+    my ( $from, $to, $value ) = split /,/, $text_input, 3;
     $from = quotemeta $from;
     $value =~ s/$from/$to/g;
+    return $value;
+}
+
+sub patsubst {
+    my ( $first_comma, $text_input ) = @_;
+    my ( $from, $to, $value ) = split /,/, $text_input, 3;
+    $from = quotemeta $from;
+    $value =~ s/$from(?=(?:\s|\z))/$to/g;
     return $value;
 }
 
@@ -120,6 +127,11 @@ In the third arg, replace every instance of first arg with second. E.g.:
 
     $(subst .o,.c,a.o b.o c.o)
     # becomes a.c b.c c.c
+
+=head2 patsubst
+
+Like L</subst>, but only operates when the pattern is at the end of
+a word.
 
 =head2 mktmp
 
