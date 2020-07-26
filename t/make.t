@@ -18,13 +18,13 @@ my @ASTs = (
     [
         "\n.SUFFIXES: .o .c .y .h .sh .cps\n\n.c.o :\n\t\$(CC) \$(CFLAGS) \$(CPPFLAGS) -c -o \$@ \$<\n\n",
         [
-            [ 'rule', ['.SUFFIXES'], ':', [ '.o', '.c', '.y', '.h', '.sh', '.cps' ], [] ],
-            [ 'rule', ['.c.o'], ':', [], ['$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<'] ],
+            [ 'rule', '.SUFFIXES', ':', '.o .c .y .h .sh .cps', [] ],
+            [ 'rule', '.c.o ',     ':', '',                     ['$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<'] ],
         ],
     ],
     [
         "# header\n.c.o :\n\techo hi\n# comment\n\n\techo yo\n",
-        [ [ 'comment', 'header' ], [ 'rule', ['.c.o'], ':', [], [ 'echo hi', 'echo yo' ] ], ],
+        [ [ 'comment', 'header' ], [ 'rule', '.c.o ', ':', '', [ 'echo hi', 'echo yo' ] ], ],
     ],
 );
 for my $l (@ASTs) {
@@ -105,7 +105,7 @@ my $other_rule = $m->Target('other')->colon;
 my $got        = $other_rule->command;
 is_deeply $got, ['@echo $(var) >"$(tempfile)"'] or diag explain $got;
 my $all_rule = $m->Target('all')->colon;
-$got = $all_rule->exp_depend;
+$got = $all_rule->depend;
 is_deeply $got, ['other'] or diag explain $got;
 
 done_testing;

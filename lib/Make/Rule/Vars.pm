@@ -25,11 +25,11 @@ sub FETCH {
     # print STDERR "FETCH $_ for ",$rule->Name,"\n";
     return $rule->Name if ( $_ eq '@' );
     return $rule->Base if ( $_ eq '*' );
-    return join( ' ', $rule->exp_depend )  if ( $_ eq '^' );
+    return join( ' ', @{ $rule->depend } ) if ( $_ eq '^' );
     return join( ' ', $rule->out_of_date ) if ( $_ eq '?' );
 
     # Next one is dubious - I think $< is really more subtle ...
-    return ( $rule->exp_depend )[0] if ( $_ eq '<' );
+    return ( @{ $rule->depend } )[0] if ( $_ eq '<' );
     return;
 }
 

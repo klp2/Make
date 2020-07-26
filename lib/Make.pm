@@ -108,7 +108,7 @@ sub dotrules {
         my $d;
         my $r = delete $self->{Dot}{$t};
         if ( defined $r ) {
-            my @rule = ( $r->colon ) ? ( $r->colon->depend ) : ();
+            my @rule = ( $r->colon ) ? ( @{ $r->colon->depend } ) : ();
             if (@rule) {
                 delete $self->{Dot}{ $t->Name };
                 print STDERR $t->Name, " has dependants\n";
@@ -174,8 +174,7 @@ sub patrule {
         if ( defined( $Pat = patmatch( $key, $target ) ) ) {
             my $t = $self->{Pattern}{$key};
             foreach my $rule ( $t->dcolon ) {
-                my @dep = $rule->exp_depend;
-                if (@dep) {
+                if ( my @dep = @{ $rule->depend } ) {
                     my $dep = $dep[0];
                     $dep =~ s/%/$Pat/g;
 
@@ -381,9 +380,10 @@ sub process_ast_bit {
     }
     elsif ( $type eq 'rule' ) {
         my ( $targets, $kind, $depends, $cmnds ) = @args;
+        ($depends) = tokenize( subsvars( $depends, $self->function_packages, $self->vars, \%ENV ) );
+        ($targets) = tokenize( subsvars( $targets, $self->function_packages, $self->vars, \%ENV ) );
         foreach (@$targets) {
-            my $t     = $self->Target($_);
-            my $index = 0;
+            my $t = $self->Target($_);
             if ( $kind eq '::' || /%/ ) {
                 $t->dcolon( $depends, $cmnds );
             }
@@ -435,10 +435,6 @@ sub parse_makefile {
                 push( @cmnds, $_ );
             }
             $was_rule = 1;
-            $depend =~ s/\s\s+/ /;
-            $target =~ s/\s\s+/ /;
-            ($depend) = tokenize($depend);
-            ($target) = tokenize($target);
             push @ast, [ 'rule', $target, $kind, $depend, \@cmnds ];
         }
         else {
@@ -458,21 +454,10 @@ sub pseudos {
         my $t = delete $self->{Dot}{ '.' . $key };
         if ( defined $t ) {
             $self->{$key} = {};
-            foreach my $dep ( $t->colon->exp_depend ) {
+            foreach my $dep ( @{ $t->colon->depend } ) {
                 $self->{$key}{$dep} = 1;
             }
         }
-    }
-    return;
-}
-
-sub ExpandTarget {
-    my $self = shift;
-    foreach my $t ( @{ $self->{'Targets'} } ) {
-        $t->ExpandTarget;
-    }
-    foreach my $t ( @{ $self->{'Targets'} } ) {
-        $t->ProcessColon;
     }
     return;
 }
@@ -554,7 +539,10 @@ sub apply {
     # This expansion is dubious as it alters the database
     # as a function of current values of Override.
     #
-    $self->ExpandTarget;    # Process $(VAR) :
+    foreach my $t ( @{ $self->{'Targets'} } ) {
+        my $c = $t->colon;
+        $c->find_commands if $c;
+    }
     @targets = ( $self->{'Targets'}[0] )->Name unless (@targets);
 
     # print STDERR join(' ',Targets => $method,map($_->Name,@targets)),"\n";
@@ -628,7 +616,7 @@ Make - Pure-Perl implementation of a somewhat GNU-like make.
     my $targ = $make->Target($name);
     $targ->colon([dependency...],[command...]);
     $targ->dcolon([dependency...],[command...]);
-    my @depends  = $targ->colon->depend;
+    my @depends  = @{ $targ->colon->depend };
     my @commands = @{ $targ->colon->command };
 
 =head1 DESCRIPTION
@@ -764,12 +752,6 @@ More attention needs to be given to using the package to I<write> makefiles.
 The rules for matching 'dot rules' e.g. .c.o   and/or pattern rules e.g. %.o : %.c
 are suspect. For example give a choice of .xs.o vs .xs.c + .c.o behaviour
 seems a little odd.
-
-Variables are probably substituted in different 'phases' of the process
-than in make(1) (or even GNU make), so 'clever' uses will probably not
-work.
-
-UNIXisms abound.
 
 =head1 SEE ALSO
 

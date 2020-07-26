@@ -77,32 +77,6 @@ sub Info {
     return shift->{MAKEFILE};
 }
 
-sub ProcessColon {
-    my ($self) = @_;
-    my $c = $self->colon;
-    $c->find_commands if $c;
-    return;
-}
-
-sub ExpandTarget {
-    my ($self) = @_;
-    my $target = $self->Name;
-    my $info   = $self->Info;
-    my $colon  = delete $self->{COLON};
-    my $dcolon = delete $self->{DCOLON};
-    foreach my $expand ( split( /\s+/, Make::subsvars( $target, $info->function_packages, $info->vars, \%ENV ) ) ) {
-        next unless defined($expand);
-        my $t = $info->Target($expand);
-        if ( defined $colon ) {
-            $t->colon($colon);
-        }
-        foreach my $d ( @{$dcolon} ) {
-            $t->dcolon($d);
-        }
-    }
-    return;
-}
-
 sub done {
     my $self = shift;
     my $info = $self->Info;
@@ -118,7 +92,7 @@ sub recurse {
     my $i    = 0;
     foreach my $rule ( $self->colon, $self->dcolon ) {
         my $j = 0;
-        foreach my $dep ( $rule->exp_depend ) {
+        foreach my $dep ( @{ $rule->depend } ) {
             my $t = $info->{Depend}{$dep};
             if ( defined $t ) {
                 $t->$method(@args);

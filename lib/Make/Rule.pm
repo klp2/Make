@@ -35,7 +35,7 @@ sub depend {
     if (@_) {
         my $name = $self->Name;
         my $dep  = shift;
-        confess "dependants $dep are not an array reference" unless ( 'ARRAY' eq ref $dep );
+        confess "dependents $dep are not an array reference" unless ( 'ARRAY' eq ref $dep );
         foreach my $file (@$dep) {
             unless ( exists $self->{DEPHASH}{$file} ) {
                 $self->{DEPHASH}{$file} = 1;
@@ -43,7 +43,7 @@ sub depend {
             }
         }
     }
-    return (wantarray) ? @{ $self->{DEPEND} } : $self->{DEPEND};
+    return $self->{DEPEND};
 }
 
 sub command {
@@ -81,7 +81,7 @@ sub out_of_date {
     my @dep   = ();
     my $tdate = $self->target->date;
     my $count = 0;
-    foreach my $dep ( $self->exp_depend ) {
+    foreach my $dep ( @{ $self->depend } ) {
 
         # This is a dumb fix around regex issues with using Strawberry perl.
         # This may not fix for all versions of Strawberry perl or all versions
@@ -107,17 +107,6 @@ sub out_of_date {
 
     # Note special case of no dependencies means it is always  out-of-date!
     return !$count;
-}
-
-#
-# Return list of things rule depends on with variables expanded
-# - May need vpath processing as well
-#
-sub exp_depend {
-    my $self = shift;
-    my $info = $self->Info;
-    my @dep  = map( split( /\s+/, Make::subsvars( $_, $info->function_packages, $info->vars, \%ENV ) ), $self->depend );
-    return (wantarray) ? @dep : \@dep;
 }
 
 #
@@ -173,7 +162,6 @@ sub find_commands {
     my ($self) = @_;
     if ( !@{ $self->{COMMAND} } && @{ $self->{DEPEND} } ) {
         my $info = $self->Info;
-        my $name = $self->Name;
         my @dep  = $self->depend;
         my @rule = $info->patrule( $self->Name );
         if (@rule) {
