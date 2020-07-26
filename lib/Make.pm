@@ -270,9 +270,6 @@ sub evaluate_macro {
         print $fh $content;
         $value = $file;
     }
-    else {
-        warn "Cannot evaluate '$key' in '$_'\n";
-    }
     return $value;
 }
 
@@ -281,7 +278,9 @@ sub subsvars {
     croak("Trying to subsitute undef value") unless ( defined $_ );
     1 while s/(?<!\$)\$(?:\(([^()]+)\)|\{([^{}]+)\}|([<\@^?*]))/
         my ($key) = grep defined, $1, $2, $3;
-        evaluate_macro( $key, @vars_search_list );
+        my $value = evaluate_macro( $key, @vars_search_list );
+        warn "Cannot evaluate '$key' in '$_'\n" if !defined $value;
+        defined $value ? $value : '';
     /e;
     s/\$\$/\$/g;
     return $_;
