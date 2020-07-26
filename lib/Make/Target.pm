@@ -95,7 +95,7 @@ sub ExpandTarget {
     my $info   = $self->Info;
     my $colon  = delete $self->{COLON};
     my $dcolon = delete $self->{DCOLON};
-    foreach my $expand ( split( /\s+/, Make::subsvars( $target, $info->vars, \%ENV ) ) ) {
+    foreach my $expand ( split( /\s+/, Make::subsvars( $target, $info->function_packages, $info->vars, \%ENV ) ) ) {
         next unless defined($expand);
         my $t = $info->Target($expand);
         if ( defined $colon ) {

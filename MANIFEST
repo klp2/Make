@@ -5,6 +5,7 @@
 .travis.yml
 Changes
 lib/Make.pm
+lib/Make/Functions.pm
 lib/Make/Rule.pm
 lib/Make/Rule/Vars.pm
 lib/Make/Target.pm

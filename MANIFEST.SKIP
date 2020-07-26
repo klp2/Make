@@ -10,3 +10,4 @@ MYMETA.json
 META\..*
 .tidyall.d/
 \.swp$
+^cover_db

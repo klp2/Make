@@ -117,7 +117,7 @@ sub out_of_date {
 sub exp_depend {
     my $self = shift;
     my $info = $self->Info;
-    my @dep  = map( split( /\s+/, Make::subsvars( $_, $info->vars, \%ENV ) ), $self->depend );
+    my @dep  = map( split( /\s+/, Make::subsvars( $_, $info->function_packages, $info->vars, \%ENV ) ), $self->depend );
     return (wantarray) ? @dep : \@dep;
 }
 
@@ -131,7 +131,7 @@ sub exp_command {
     my $base = $self->Name;
     my %var;
     tie %var, 'Make::Rule::Vars', $self;
-    my @cmd = map( Make::subsvars( $_, \%var, $info->vars, \%ENV ), $self->command );
+    my @cmd = map( Make::subsvars( $_, $info->function_packages, \%var, $info->vars, \%ENV ), $self->command );
     return (wantarray) ? @cmd : \@cmd;
 }
 

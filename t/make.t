@@ -55,7 +55,8 @@ for my $l (@TOKENs) {
 }
 
 my ( undef, $tempfile ) = tempfile;
-my $VARS = {
+my $FUNCTIONS = ['Make::Functions'];
+my $VARS      = {
     k1    => 'k2',
     k2    => 'hello',
     files => 'a.o b.o c.o',
@@ -78,7 +79,7 @@ my @SUBs = (
 );
 for my $l (@SUBs) {
     my ( $in, $expected, $err ) = @$l;
-    my ($got) = eval { Make::subsvars( $in, $VARS ) };
+    my ($got) = eval { Make::subsvars( $in, $FUNCTIONS, $VARS ) };
     like $@, $err || qr/^$/;
     is $got, $expected;
 }

@@ -14,7 +14,16 @@ use File::Temp;
 
 my %date;
 my $generation = 0;    # lexical cross-package scope used!
-my @temp_handles;      # so they don't get destroyed before end of program
+
+## no critic (Subroutines::RequireArgUnpacking Subroutines::RequireFinalReturn)
+sub load_modules {
+    for my $pkg (@_) {
+        $pkg =~ s#::#/#g;
+        ## no critic (Modules::RequireBarewordIncludes)
+        eval { require "$pkg.pm"; 1 } or die;
+        ## use critic
+    }
+}
 
 sub phony {
     my ( $self, $name ) = @_;
@@ -89,7 +98,7 @@ sub locate {
 sub dotrules {
     my ($self) = @_;
     foreach my $t ( sort keys %{ $self->{Dot} } ) {
-        my $e = subsvars( $t, $self->vars, \%ENV );
+        my $e = subsvars( $t, $self->function_packages, $self->vars, \%ENV );
         $self->{Dot}{$e} = delete $self->{Dot}{$t} unless ( $t eq $e );
     }
     my (@suffix) = $self->suffixes;
@@ -189,7 +198,8 @@ sub needs {
     my ( $self, $target ) = @_;
     unless ( $self->{Done}{$target} ) {
         if ( exists $self->{Depend}{$target} ) {
-            my @depend = split( /\s+/, subsvars( $self->{Depend}{$target}, $self->vars, \%ENV ) );
+            my @depend = split /\s+/,
+                subsvars( $self->{Depend}{$target}, $self->function_packages, $self->vars, \%ENV );
             foreach (@depend) {
                 $self->needs($_);
             }
@@ -208,7 +218,7 @@ sub needs {
 }
 
 sub evaluate_macro {
-    my ( $key, @vars_search_list ) = @_;
+    my ( $key, $function_packages, @vars_search_list ) = @_;
     my $value;
     if ( $key =~ /^([\w._]+|\S)(?::(.*))?$/ ) {
         my ( $var, $op ) = ( $1, $2 );
@@ -223,62 +233,24 @@ sub evaluate_macro {
             $value =~ s/$parts[0](?=(?:\s|\z))/$parts[1]/g;
         }
     }
-    elsif ( $key =~ /wildcard\s*(.*)$/ ) {
-        $value = join( ' ', glob($1) );
-    }
-    elsif ( $key =~ /shell\s*(.*)$/ ) {
-        $value = `$1`;
-        chomp $value;
-        $value = join ' ', split "\n", $value;
-    }
-    elsif ( $key =~ /addprefix\s*([^,]*),(.*)$/ ) {
-        ## no critic (BuiltinFunctions::RequireBlockMap)
-        $value = join ' ', map $1 . $_, split /\s+/, $2;
-        ## use critic
-    }
-    elsif ( $key =~ /notdir\s*(.*)$/ ) {
-        my @files = split( /\s+/, $1 );
-        foreach (@files) {
-            s#^.*/##;
+    elsif ( $key =~ /([\w._]+)(?:,(\S+))?\s+(.*)$/ ) {
+        my ( $func, $first_comma, $args ) = ( $1, $2, $3 );
+        my $code;
+        foreach my $package (@$function_packages) {
+            last if $code = $package->can($func);
         }
-        $value = join( ' ', @files );
-    }
-    elsif ( $key =~ /dir\s*(.*)$/ ) {
-        my @files = split( /\s+/, $1 );
-        foreach (@files) {
-            $_ = './' unless s#^(.*)/[^/]*$#$1#;
-        }
-        $value = join( ' ', @files );
-    }
-    elsif ( $key =~ /^subst\s+([^,]*),([^,]*),(.*)$/ ) {
-        my ( $from, $to ) = ( $1, $2 );
-        $value = $3;
-        $from  = quotemeta $from;
-        $value =~ s/$from/$to/g;
-    }
-    elsif ( $key =~ /^mktmp(?:,(\S+))?\s*(.*)$/ ) {
-        my ( $file, $content, $fh ) = ( $1, $2 );
-        if ( defined $file ) {
-            open( my $tmp, ">", $file ) or die "Cannot open $file: $!";
-            $fh = $tmp;
-        }
-        else {
-            $fh = File::Temp->new;    # default UNLINK = 1
-            push @temp_handles, $fh;
-            $file = $fh->filename;
-        }
-        print $fh $content;
-        $value = $file;
+        die "'$func' not found in (@$function_packages)" if !defined $code;
+        $value = join ' ', $code->( $first_comma, $args );
     }
     return $value;
 }
 
 sub subsvars {
-    ( local $_, my @vars_search_list ) = @_;
+    ( local $_, my $function_packages, my @vars_search_list ) = @_;
     croak("Trying to subsitute undef value") unless ( defined $_ );
     1 while s/(?<!\$)\$(?:\(([^()]+)\)|\{([^{}]+)\}|([<\@^?*]))/
         my ($key) = grep defined, $1, $2, $3;
-        my $value = evaluate_macro( $key, @vars_search_list );
+        my $value = evaluate_macro( $key, $function_packages, @vars_search_list );
         warn "Cannot evaluate '$key' in '$_'\n" if !defined $value;
         defined $value ? $value : '';
     /e;
@@ -378,12 +350,17 @@ sub vars {
     $self->{Vars};
 }
 
+sub function_packages {
+    my ($self) = @_;
+    $self->{FunctionPackages};
+}
+
 sub process_ast_bit {
     my ( $self, $type, @args ) = @_;
     return if $type eq 'comment';
     if ( $type eq 'include' ) {
         my $opt = $args[0];
-        my ($tokens) = tokenize( subsvars( $args[1], $self->vars, \%ENV ) );
+        my ($tokens) = tokenize( subsvars( $args[1], $self->function_packages, $self->vars, \%ENV ) );
         foreach my $file (@$tokens) {
             if ( open( my $mf, "<", $file ) ) {
                 my $ast = parse_makefile($mf);
@@ -601,20 +578,22 @@ sub Make {
 sub new {
     my ( $class, %args ) = @_;
     my $self = bless {
-        Pattern => {},    # GNU style %.o : %.c
-        Dot     => {},    # Trad style .c.o
-        Vpath   => {},    # vpath %.c info
-        Vars    => {},    # Variables defined in makefile
-        Depend  => {},    # hash of targets
-        Targets => [],    # ordered version so we can find 1st one
-        Pass    => 0,     # incremented each sweep
-        Need    => {},
-        Done    => {},
+        Pattern          => {},                      # GNU style %.o : %.c
+        Dot              => {},                      # Trad style .c.o
+        Vpath            => {},                      # vpath %.c info
+        Vars             => {},                      # Variables defined in makefile
+        Depend           => {},                      # hash of targets
+        Targets          => [],                      # ordered version so we can find 1st one
+        Pass             => 0,                       # incremented each sweep
+        Need             => {},
+        Done             => {},
+        FunctionPackages => [qw(Make::Functions)],
         %args,
     }, $class;
     $self->set_var( 'CC',     $Config{cc} );
     $self->set_var( 'AR',     $Config{ar} );
     $self->set_var( 'CFLAGS', $Config{optimize} );
+    load_modules( @{ $self->function_packages } );
     my $ast = parse_makefile( \*DATA );
     $self->process_ast_bit(@$_) for @$ast;
     $self->parse( $self->{Makefile} );
@@ -692,6 +671,11 @@ If true, then F<GNUmakefile> is looked for first.
 The file to parse. If not given, these files will be tried, in order:
 F<GNUmakefile> if L</GNU>, F<makefile>, F<Makefile>.
 
+=head3 FunctionPackages
+
+Array-ref of package names to search for GNU-make style
+functions. Defaults to L<Make::Functions>.
+
 =head2 Make
 
 Given a target-name, builds the target(s) specified, or the first 'real'
@@ -722,6 +706,10 @@ These are read-only.
 
 Returns a hash-ref of the current set of variables.
 
+=head2 function_packages
+
+Returns an array-ref of the packages to search for macro functions.
+
 =head1 FUNCTIONS
 
 =head2 parse_makefile
@@ -738,6 +726,13 @@ make-style function calls will be a single token.
 
 =head2 subsvars
 
+    my $expanded = Make::subsvars(
+        'hi $(shell echo there)',
+        \@function_packages,
+        \%vars,
+    );
+    # "hi there"
+
 Given a piece of text, will substitute any macros in it, either a
 single-character macro, or surrounded by either C<{}> or C<()>. These
 can be nested. Uses the remaining args as a list of hashes to search
@@ -749,49 +744,7 @@ be expanded. Then all occurrences of "a" at the end of words within
 the expanded text will be replaced with "b". This is intended for file
 suffixes.
 
-Also understands these GNU-make style functions:
-
-=head3 wildcard
-
-Returns all its args expanded using C<glob>.
-
-=head3 shell
-
-Runs the command, returns the output with all newlines replaced by spaces.
-
-=head3 addprefix
-
-Prefixes each word in the second arg with first arg:
-
-    $(addprefix x/,1 2)
-    # becomes x/1 x/2
-
-=head3 notdir
-
-Returns everything after last C</>.
-
-=head3 dir
-
-Returns everything up to last C</>. If no C</>, returns C<./>.
-
-=head3 subst
-
-In the third arg, replace every instance of first arg with second. E.g.:
-
-    $(subst .o,.c,a.o b.o c.o)
-    # becomes a.c b.c c.c
-
-=head3 mktmp
-
-Like the dmake macro, but with mandatory file argument specified after
-an immediate comma (C<,>). The text after further whitespace is inserted
-in that file, whose name is returned. E.g.:
-
-    $(mktmp,file.txt $(shell echo hi))
-    # becomes file.txt, and that file contains "hi"
-
-    $(mktmp $(shell echo hi))
-    # becomes a temporary filename, and that file contains "hi"
+For GNU-make style functions, see L<Make::Functions>.
 
 =head1 BUGS
 
