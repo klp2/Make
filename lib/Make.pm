@@ -264,9 +264,10 @@ sub subsvars {
 # Perhaps should also understand "..." and '...' ?
 ## no critic
 sub tokenize {
-    my ( $string, $offset, $close_stack ) = @_;
-    $offset      ||= 0;
-    $close_stack ||= [];
+    my ( $string, $offset, $close_this, $close_set ) = @_;
+    $offset     ||= 0;
+    $close_this ||= '';
+    $close_set  ||= {};
     my $length       = length $string;
     my @result       = ();
     my $start_offset = $offset;
@@ -276,10 +277,10 @@ sub tokenize {
     while (1) {
         my $char      = substr $string, $offset, 1;
         my $is_closer = $char =~ /[\}\)]/;
-        $good_closer = $is_closer && @$close_stack && $char eq $close_stack->[-1];
+        $good_closer = $is_closer && $char eq $close_this;
         if (    $is_closer
-            and !( @$close_stack and $char eq $close_stack->[-1] )
-            and ( grep $char eq $_, @$close_stack ) )
+            and !( $char eq $close_this )
+            and ( $close_set->{$char} ) )
         {
             die "Unexpected '$char' in $string at $offset";
         }
@@ -301,7 +302,7 @@ sub tokenize {
             elsif ( $char2 =~ /([\{\(])/ ) {
                 my $opener = $1;
                 my $closer = $opener eq '(' ? ')' : '}';
-                ( my $subtokens, $offset ) = tokenize( $string, $offset + 1, [ @$close_stack, $closer ], );
+                ( my $subtokens, $offset ) = tokenize( $string, $offset + 1, $closer, { %$close_set, $closer => 1 } );
                 $offset--;    # counter the ++ in continue
             }
             else {
@@ -316,9 +317,9 @@ sub tokenize {
     continue {
         $offset++;
     }
-    die "Expected '$close_stack->[-1]' in '$string' at end"
+    die "Expected '$close_this' in '$string' at end"
         if !$good_closer
-        and @$close_stack
+        and $close_this
         and $offset == $length;
     return ( \@result, $offset );
 }
