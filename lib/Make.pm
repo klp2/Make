@@ -544,21 +544,31 @@ sub apply {
         $c->find_commands if $c;
     }
     @$targets = ( $self->{'Targets'}[0] )->Name unless (@$targets);
+    my @results;
     foreach (@$targets) {
         my $t = $self->Target($_);
         unless ( defined $t ) {
             print STDERR join( ' ', $method, @_ ), "\n";
             die "Cannot '$method' - no target $_";
         }
-        $t->recurse($method);
+        push @results, $t->recurse($method);
     }
-    return;
+    return @results;
 }
 ## use critic
 
+# Spew a shell script to perfom the 'make' e.g. make -n
 ## no critic (Subroutines::RequireFinalReturn RequireArgUnpacking)
 sub Script {
-    shift->apply( Script => @_ );
+    for ( shift->apply( Make => @_ ) ) {
+        my ( $name, @cmd ) = @$_;
+        my $com = ( $^O eq 'MSWin32' ) ? 'rem ' : '# ';
+        print $com, $name, "\n";
+        foreach my $line (@cmd) {
+            $line =~ s/^([\@\s-]*)//;
+            print "$line\n";
+        }
+    }
 }
 
 sub Print {
@@ -566,7 +576,20 @@ sub Print {
 }
 
 sub Make {
-    shift->apply( Make => @_ );
+    my $self = shift;
+    for ( $self->apply( Make => @_ ) ) {
+        my ( $name, @cmd ) = @$_;
+        foreach my $line (@cmd) {
+            $line =~ s/^([\@\s-]*)//;
+            my $prefix = $1;
+            print "$line\n" unless ( $prefix =~ /\@/ );
+            my $code = $self->exec($line);
+            if ( $code && $prefix !~ /-/ ) {
+                $code >>= 8;
+                die "Code $code from $line";
+            }
+        }
+    }
 }
 ## use critic
 

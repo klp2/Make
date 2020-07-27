@@ -89,20 +89,21 @@ sub recurse {
     my ( $self, $method, @args ) = @_;
     return if $self->done;
     my $info = $self->Info;
+    my @results;
     foreach my $rule ( $self->colon, $self->dcolon ) {
         foreach my $dep ( @{ $rule->depend } ) {
             my $t = $info->Target($dep);
             if ( defined $t ) {
-                $t->recurse( $method, @args );
+                push @results, $t->recurse( $method, @args );
             }
             elsif ( !$info->exists($dep) ) {
                 my $dir = cwd();
                 die "Cannot recurse $method - no target $dep in $dir";
             }
         }
-        $rule->$method(@args);
+        push @results, $rule->$method(@args);
     }
-    return;
+    return @results;
 }
 
 1;

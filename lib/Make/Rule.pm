@@ -116,7 +116,6 @@ sub out_of_date {
 sub exp_command {
     my $self = shift;
     my $info = $self->Info;
-    my $base = $self->Name;
     my %var;
     tie %var, 'Make::Rule::Vars', $self;
     my @subs_args = ( $info->function_packages, \%var, $info->vars, \%ENV );
@@ -173,42 +172,12 @@ sub find_commands {
 }
 
 #
-# Spew a shell script to perfom the 'make' e.g. make -n
-#
-sub Script {
-    my $self = shift;
-    return unless $self->out_of_date;
-    my @cmd = $self->exp_command;
-    if (@cmd) {
-        my $com = ( $^O eq 'MSWin32' ) ? 'rem ' : '# ';
-        print $com, $self->Name, "\n";
-        foreach my $file ( $self->exp_command ) {
-            $file =~ s/^[\@\s-]*//;
-            print "$file\n";
-        }
-    }
-}
-
-#
 # Normal 'make' method
 #
 sub Make {
     my $self = shift;
     return unless ( $self->out_of_date );
-    my @cmd  = $self->exp_command;
-    my $info = $self->Info;
-    if (@cmd) {
-        foreach my $file ( $self->exp_command ) {
-            $file =~ s/^([\@\s-]*)//;
-            my $prefix = $1;
-            print "$file\n" unless ( $prefix =~ /\@/ );
-            my $code = $info->exec($file);
-            if ( $code && $prefix !~ /-/ ) {
-                $code >>= 8;
-                die "Code $code from $file";
-            }
-        }
-    }
+    return [ $self->Name, $self->exp_command ];
 }
 
 #
@@ -227,7 +196,7 @@ sub Print {
     print "\n";
     my @cmd = $self->exp_command;
     if (@cmd) {
-        foreach my $file ( $self->exp_command ) {
+        foreach my $file (@cmd) {
             print "\t", $file, "\n";
         }
     }
