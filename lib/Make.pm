@@ -506,10 +506,18 @@ sub PrintVars {
 }
 
 sub exec {
-    my $self = shift;
+    my ( $self, $line ) = @_;
     undef %date;
     $generation++;
-    return system @_;
+    $line =~ s/^([\@\s-]*)//;
+    my $prefix = $1;
+    print "$line\n" unless ( $prefix =~ /\@/ );
+    my $code = system $line;
+    if ( $code && $prefix !~ /-/ ) {
+        $code >>= 8;
+        die "Code $code from $line";
+    }
+    return;
 }
 
 ## no critic (Subroutines::RequireFinalReturn)
@@ -579,16 +587,7 @@ sub Make {
     my $self = shift;
     for ( $self->apply( Make => @_ ) ) {
         my ( $name, @cmd ) = @$_;
-        foreach my $line (@cmd) {
-            $line =~ s/^([\@\s-]*)//;
-            my $prefix = $1;
-            print "$line\n" unless ( $prefix =~ /\@/ );
-            my $code = $self->exec($line);
-            if ( $code && $prefix !~ /-/ ) {
-                $code >>= 8;
-                die "Code $code from $line";
-            }
-        }
+        $self->exec($_) for @cmd;
     }
 }
 ## use critic
