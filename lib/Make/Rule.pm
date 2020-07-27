@@ -119,7 +119,8 @@ sub exp_command {
     my $base = $self->Name;
     my %var;
     tie %var, 'Make::Rule::Vars', $self;
-    my @cmd = map( Make::subsvars( $_, $info->function_packages, \%var, $info->vars, \%ENV ), @{ $self->command } );
+    my @subs_args = ( $info->function_packages, \%var, $info->vars, \%ENV );
+    my @cmd       = map Make::subsvars( $_, @subs_args ), @{ $self->command };
     return (wantarray) ? @cmd : \@cmd;
 }
 
