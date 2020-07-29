@@ -100,7 +100,7 @@ sub locate {
 sub dotrules {
     my ($self) = @_;
     foreach my $t ( sort keys %{ $self->{Dot} } ) {
-        my $e = subsvars( $t, $self->function_packages, $self->vars, \%ENV );
+        my $e = $self->expand($t);
         $self->{Dot}{$e} = delete $self->{Dot}{$t} unless ( $t eq $e );
     }
     my (@suffix) = $self->suffixes;
@@ -199,8 +199,7 @@ sub needs {
     my ( $self, $target ) = @_;
     unless ( $self->{Done}{$target} ) {
         if ( exists $self->{Depend}{$target} ) {
-            my @depend = split /\s+/,
-                subsvars( $self->{Depend}{$target}, $self->function_packages, $self->vars, \%ENV );
+            my @depend = tokenize( $self->expand( $self->{Depend}{$target} ) );
             foreach (@depend) {
                 $self->needs($_);
             }
@@ -356,12 +355,17 @@ sub function_packages {
     $self->{FunctionPackages};
 }
 
+sub expand {
+    my ( $self, $text ) = @_;
+    return subsvars( $text, $self->function_packages, $self->vars, \%ENV );
+}
+
 sub process_ast_bit {
     my ( $self, $type, @args ) = @_;
     return if $type eq 'comment';
     if ( $type eq 'include' ) {
         my $opt = $args[0];
-        my ($tokens) = tokenize( subsvars( $args[1], $self->function_packages, $self->vars, \%ENV ) );
+        my ($tokens) = tokenize( $self->expand( $args[1] ) );
         foreach my $file (@$tokens) {
             if ( open( my $mf, "<", $file ) ) {
                 my $ast = parse_makefile($mf);
@@ -381,8 +385,8 @@ sub process_ast_bit {
     }
     elsif ( $type eq 'rule' ) {
         my ( $targets, $kind, $depends, $cmnds ) = @args;
-        ($depends) = tokenize( subsvars( $depends, $self->function_packages, $self->vars, \%ENV ) );
-        ($targets) = tokenize( subsvars( $targets, $self->function_packages, $self->vars, \%ENV ) );
+        ($depends) = tokenize( $self->expand($depends) );
+        ($targets) = tokenize( $self->expand($targets) );
         foreach (@$targets) {
             my $t = $self->Target($_);
             if ( $kind eq '::' || /%/ ) {
@@ -726,6 +730,10 @@ Given a name and value, sets the variable to that.
 
 May gain a "type" parameter to distinguish immediately-expanded from
 recursively-expanded (the default).
+
+=head2 expand
+
+Uses L</subsvars> to return its only arg with any macros expanded.
 
 =head1 ATTRIBUTES
 
