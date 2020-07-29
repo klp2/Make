@@ -218,11 +218,11 @@ sub needs {
 }
 
 sub evaluate_macro {
-    my ( $key, $function_packages, @vars_search_list ) = @_;
+    my ( $key, $function_packages, $vars_search_list ) = @_;
     my $value;
     if ( $key =~ /^([\w._]+|\S)(?::(.*))?$/ ) {
         my ( $var, $subst ) = ( $1, $2 );
-        foreach my $hash (@vars_search_list) {
+        foreach my $hash (@$vars_search_list) {
             last if defined( $value = $hash->{$var} );
         }
         $value = '' if !defined $value;
@@ -245,11 +245,11 @@ sub evaluate_macro {
 }
 
 sub subsvars {
-    ( local $_, my $function_packages, my @vars_search_list ) = @_;
+    ( local $_, my $function_packages, my $vars_search_list ) = @_;
     croak("Trying to subsitute undef value") unless ( defined $_ );
     1 while s/(?<!\$)\$(?:\(([^()]+)\)|\{([^{}]+)\}|([<\@^?*]))/
         my ($key) = grep defined, $1, $2, $3;
-        my $value = evaluate_macro( $key, $function_packages, @vars_search_list );
+        my $value = evaluate_macro( $key, $function_packages, $vars_search_list );
         warn "Cannot evaluate '$key' in '$_'\n" if !defined $value;
         defined $value ? $value : '';
     /e;
@@ -357,7 +357,7 @@ sub function_packages {
 
 sub expand {
     my ( $self, $text ) = @_;
-    return subsvars( $text, $self->function_packages, $self->vars, \%ENV );
+    return subsvars( $text, $self->function_packages, [ $self->vars, \%ENV ] );
 }
 
 sub process_ast_bit {
@@ -766,13 +766,13 @@ make-style function calls will be a single token.
     my $expanded = Make::subsvars(
         'hi $(shell echo there)',
         \@function_packages,
-        \%vars,
+        [ \%vars ],
     );
     # "hi there"
 
 Given a piece of text, will substitute any macros in it, either a
 single-character macro, or surrounded by either C<{}> or C<()>. These
-can be nested. Uses the remaining args as a list of hashes to search
+can be nested. Uses the array-ref as a list of hashes to search
 for values.
 
 If the macro is of form C<$(varname:a=b)>, then this will be a GNU

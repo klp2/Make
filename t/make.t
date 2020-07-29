@@ -79,7 +79,7 @@ my @SUBs = (
 );
 for my $l (@SUBs) {
     my ( $in, $expected, $err ) = @$l;
-    my ($got) = eval { Make::subsvars( $in, $FUNCTIONS, $VARS ) };
+    my ($got) = eval { Make::subsvars( $in, $FUNCTIONS, [$VARS] ) };
     like $@, $err || qr/^$/;
     is $got, $expected;
 }
