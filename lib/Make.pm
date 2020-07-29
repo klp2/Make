@@ -506,17 +506,26 @@ sub PrintVars {
     return;
 }
 
+sub parse_cmdline {
+    my ($line) = @_;
+    $line =~ s/^([\@\s-]*)//;
+    my $prefix = $1;
+    my %parsed = ( line => $line );
+    $parsed{silent}   = 1 if $prefix =~ /\@/;
+    $parsed{can_fail} = 1 if $prefix =~ /-/;
+    return \%parsed;
+}
+
 sub exec {
     my ( $self, $line ) = @_;
     undef %date;
     $generation++;
-    $line =~ s/^([\@\s-]*)//;
-    my $prefix = $1;
-    print "$line\n" unless ( $prefix =~ /\@/ );
-    my $code = system $line;
-    if ( $code && $prefix !~ /-/ ) {
+    my $parsed = parse_cmdline($line);
+    print "$parsed->{line}\n" unless $parsed->{silent};
+    my $code = system $parsed->{line};
+    if ( $code && !$parsed->{can_fail} ) {
         $code >>= 8;
-        die "Code $code from $line";
+        die "Code $code from $parsed->{line}";
     }
     return;
 }

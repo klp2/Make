@@ -84,6 +84,20 @@ for my $l (@SUBs) {
     is $got, $expected;
 }
 
+my @CMDs = (
+    [ ' a line', { line => 'a line' } ],
+    [ 'a line',  { line => 'a line' } ],
+    [ '@echo shhh',   { line => 'echo shhh',  silent   => 1 } ],
+    [ '- @echo hush', { line => 'echo hush',  silent   => 1, can_fail => 1 } ],
+    [ '-just do it',  { line => 'just do it', can_fail => 1 } ],
+);
+for my $l (@CMDs) {
+    my ( $in, $expected, $err ) = @$l;
+    my ($got) = eval { Make::parse_cmdline($in) };
+    like $@,        $err || qr/^$/;
+    is_deeply $got, $expected;
+}
+
 is ref($m), 'Make';
 eval { $m->Make('all') };
 is $@, '',;
