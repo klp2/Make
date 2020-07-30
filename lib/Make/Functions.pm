@@ -120,6 +120,17 @@ In the third arg, replace every instance of first arg with second. E.g.:
     $(subst .o,.c,a.o b.o c.o)
     # becomes a.c b.c c.c
 
+Since, as with GNU make, all whitespace gets ignored in the expression
+I<as written>, and the commas cannot be quoted, you need to use variable
+expansion for some scenarios:
+
+    comma = ,
+    empty =
+    space = $(empty) $(empty)
+    foo = a b c
+    bar = $(subst $(space),$(comma),$(foo))
+    # bar is now "a,b,c"
+
 =head2 patsubst
 
 Like L</subst>, but only operates when the pattern is at the end of

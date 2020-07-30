@@ -34,19 +34,7 @@ for my $l (@ASTs) {
     is_deeply $got, $expected or diag explain $got;
 }
 
-my @TOKENs = (
-    [ "a b c",    [qw(a b c)] ],
-    [ " a b c",   [qw(a b c)] ],
-    [ ' a ${hi}', [qw(a ${hi})] ],
-    [ ' a $(hi)', [qw(a $(hi))] ],
-    [ ' a $(hi there)',        [ 'a', '$(hi there)' ] ],
-    [ ' a ${hi $(call)} b',    [ 'a', '${hi $(call)}', 'b' ] ],
-    [ ' a ${hi $(func call)}', [ 'a', '${hi $(func call)}' ] ],
-    [ ' a ${hi func(call)} b', [ 'a', '${hi func(call)}', 'b' ] ],
-    [ ' a ${hi func(call} b',  [ 'a', '${hi func(call}', 'b' ] ],
-    [ ' a ${hi $(call} b',    undef, qr/Unexpected '}'/ ],
-    [ ' a ${hi $(func call)', undef, qr/Expected '}'/ ],
-);
+my @TOKENs = ( [ "a b c", [qw(a b c)] ], [ " a b c", [qw(a b c)] ], );
 for my $l (@TOKENs) {
     my ( $in, $expected, $err ) = @$l;
     my ($got) = eval { Make::tokenize($in) };
@@ -59,13 +47,20 @@ my $VARS      = {
     k1    => 'k2',
     k2    => 'hello',
     files => 'a.o b.o c.o',
+    empty => '',
+    space => ' ',
+    comma => ',',
 };
 my @SUBs = (
     [ 'none',                                 'none' ],
     [ 'this $(k1) is',                        'this k2 is' ],
+    [ 'this $$(k1) is not',                   'this $(k1) is not' ],
     [ 'this ${k1} is',                        'this k2 is' ],
     [ 'this $($(k1)) double',                 'this hello double' ],
+    [ '$(empty)',                             '' ],
+    [ '$(empty) $(empty)',                    ' ' ],
     [ '$(subst .o,.c,$(files))',              'a.c b.c c.c' ],
+    [ '$(subst $(space),$(comma),$(files))',  'a.o,b.o,c.o' ],
     [ 'not $(absent) is',                     'not  is' ],
     [ 'this $(files:.o=.c) is',               'this a.c b.c c.c is' ],
     [ '$(shell echo hi; echo there)',         'hi there' ],
@@ -74,6 +69,8 @@ my @SUBs = (
     [ '$(addprefix x/,1 2)',                  'x/1 x/2' ],
     [ '$(notdir x/1 x/2)',                    '1 2' ],
     [ '$(dir x/1 y/2 3)',                     'x y ./' ],
+    [ ' a ${dir $(call}',                     undef, qr/Syntax error/ ],
+    [ ' a ${dir $(k1)',                       undef, qr/Syntax error/ ],
 );
 for my $l (@SUBs) {
     my ( $in, $expected, $err ) = @$l;

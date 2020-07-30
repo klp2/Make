@@ -11,6 +11,7 @@ use Cwd;
 use File::Spec;
 use Make::Target ();
 use File::Temp;
+use Text::Balanced qw(extract_bracketed);
 require Make::Functions;
 
 my %date;
@@ -218,7 +219,8 @@ sub needs {
 }
 
 sub evaluate_macro {
-    my ( $key, $function_packages, $vars_search_list ) = @_;
+    my ( $key,               @args )             = @_;
+    my ( $function_packages, $vars_search_list ) = @args;
     my $value;
     if ( $key =~ /^([\w._]+|\S)(?::(.*))?$/ ) {
         my ( $var, $subst ) = ( $1, $2 );
@@ -239,88 +241,60 @@ sub evaluate_macro {
             last if $code = $package->can($func);
         }
         die "'$func' not found in (@$function_packages)" if !defined $code;
-        $value = join ' ', $code->( split /,/, $args );
+        ## no critic (BuiltinFunctions::RequireBlockMap)
+        $value = join ' ', $code->( map subsvars( $_, $function_packages, $vars_search_list ), split /\s*,\s*/, $args );
+        ## use critic
     }
-    return $value;
+    elsif ( $key =~ /^\S*\$/ ) {
+
+        # something clever, expand it
+        $key = subsvars( $key, @args );
+        return evaluate_macro( $key, @args );
+    }
+    return subsvars( $value, @args );
 }
 
 sub subsvars {
-    ( local $_, my $function_packages, my $vars_search_list ) = @_;
-    croak("Trying to subsitute undef value") unless ( defined $_ );
-    1 while s/(?<!\$)\$(?:\(([^()]+)\)|\{([^{}]+)\}|([<\@^?*]))/
-        my ($key) = grep defined, $1, $2, $3;
-        my $value = evaluate_macro( $key, $function_packages, $vars_search_list );
-        warn "Cannot evaluate '$key' in '$_'\n" if !defined $value;
-        defined $value ? $value : '';
-    /e;
-    s/\$\$/\$/g;
-    return $_;
-}
-
-#
-# Split a string into tokens - like split(/\s+/,...) but handling
-# $(keyword ...) with embedded \s
-# Perhaps should also understand "..." and '...' ?
-## no critic
-sub tokenize {
-    my ( $string, $offset, $close_this, $close_set ) = @_;
-    $offset     ||= 0;
-    $close_this ||= '';
-    $close_set  ||= {};
-    my $length       = length $string;
-    my @result       = ();
-    my $start_offset = $offset;
-    my $in_token     = 0;
-    my $good_closer;
-
+    my ( $remaining, $function_packages, $vars_search_list ) = @_;
+    croak("Trying to subsitute undef value") unless ( defined $remaining );
+    my $ret = '';
+    my $found;
     while (1) {
-        my $char      = substr $string, $offset, 1;
-        my $is_closer = $char =~ /[\}\)]/;
-        $good_closer = $is_closer && $char eq $close_this;
-        if (    $is_closer
-            and !( $char eq $close_this )
-            and ( $close_set->{$char} ) )
-        {
-            die "Unexpected '$char' in $string at $offset";
+        last unless $remaining =~ s/(.*?)\$//;
+        $ret .= $1;
+        my $char = substr $remaining, 0, 1;
+        if ( $char eq '$' ) {
+            $ret .= $char;    # literal $
+            substr $remaining, 0, 1, '';
+            next;
         }
-        if ( $char =~ /\s/ or $good_closer or $offset == $length ) {
-            push @result, substr $string, $start_offset, $offset - $start_offset
-                if $in_token;
-            $in_token = 0;
+        elsif ( $char =~ /[\{\(]/ ) {
+            ( $found, my $tail ) = extract_bracketed $remaining, '{}()', '';
+            die "Syntax error in '$remaining'" if !defined $found;
+            $found     = substr $found, 1, -1;
+            $remaining = $tail;
         }
         else {
-            $start_offset = $offset if !$in_token;
-            $in_token     = 1;
+            $found = substr $remaining, 0, 1, '';
         }
-        last if $offset >= $length;
-        if ( $char eq '$' ) {
-            my $char2 = substr( $string, ++$offset, 1 );
-            if ( $char2 eq '$' ) {
-                next;    # literal $
-            }
-            elsif ( $char2 =~ /([\{\(])/ ) {
-                my $opener = $1;
-                my $closer = $opener eq '(' ? ')' : '}';
-                ( my $subtokens, $offset ) = tokenize( $string, $offset + 1, $closer, { %$close_set, $closer => 1 } );
-                $offset--;    # counter the ++ in continue
-            }
-            else {
-                die "Syntax error: '\$$char2' in '$string' at $offset";
-            }
+        my $value = evaluate_macro( $found, $function_packages, $vars_search_list );
+        if ( !defined $value ) {
+            warn "Cannot evaluate '$found'\n";
+            $value = '';
         }
-        elsif ($good_closer) {
-            $offset++;
-            last;
-        }
+        $ret .= $value;
     }
-    continue {
-        $offset++;
-    }
-    die "Expected '$close_this' in '$string' at end"
-        if !$good_closer
-        and $close_this
-        and $offset == $length;
-    return ( \@result, $offset );
+    return $ret . $remaining;
+}
+
+# Perhaps should also understand "..." and '...' ?
+# like GNU make will need to understand \ to quote spaces, for deps
+# also C:\xyz as a non-target (overlap with parse_makefile)
+sub tokenize {
+    my ($string) = @_;
+    ## no critic (BuiltinFunctions::RequireBlockGrep)
+    return [ grep length, split /\s+/, $string ];
+    ## use critic
 }
 
 sub get_full_line {
@@ -758,8 +732,7 @@ C<var>, C<rule>), followed by relevant data.
 
 =head2 tokenize
 
-Given a line, returns array-ref of the space-separated "tokens". GNU
-make-style function calls will be a single token.
+Given a line, returns array-ref of the space-separated "tokens".
 
 =head2 subsvars
 
