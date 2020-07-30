@@ -54,7 +54,6 @@ for my $l (@TOKENs) {
     is_deeply $got, $expected or diag explain $got;
 }
 
-my ( undef, $tempfile ) = tempfile;
 my $FUNCTIONS = ['Make::Functions'];
 my $VARS      = {
     k1    => 'k2',
@@ -62,20 +61,19 @@ my $VARS      = {
     files => 'a.o b.o c.o',
 };
 my @SUBs = (
-    [ 'none',                                           'none' ],
-    [ 'this $(k1) is',                                  'this k2 is' ],
-    [ 'this ${k1} is',                                  'this k2 is' ],
-    [ 'this $($(k1)) double',                           'this hello double' ],
-    [ '$(subst .o,.c,$(files))',                        'a.c b.c c.c' ],
-    [ 'not $(absent) is',                               'not  is' ],
-    [ 'this $(files:.o=.c) is',                         'this a.c b.c c.c is' ],
-    [ '$(shell echo hi; echo there)',                   'hi there' ],
-    [ "\$(shell \"$^X\" -pe 1 \$(mktmp,$tempfile hi))", 'hi' ],
-    [ "\$(shell \"$^X\" -pe 1 \$(mktmp hi))",           'hi' ],
-    [ '$(wildcard Chan* RE*)',                          'Changes README' ],
-    [ '$(addprefix x/,1 2)',                            'x/1 x/2' ],
-    [ '$(notdir x/1 x/2)',                              '1 2' ],
-    [ '$(dir x/1 y/2 3)',                               'x y ./' ],
+    [ 'none',                                 'none' ],
+    [ 'this $(k1) is',                        'this k2 is' ],
+    [ 'this ${k1} is',                        'this k2 is' ],
+    [ 'this $($(k1)) double',                 'this hello double' ],
+    [ '$(subst .o,.c,$(files))',              'a.c b.c c.c' ],
+    [ 'not $(absent) is',                     'not  is' ],
+    [ 'this $(files:.o=.c) is',               'this a.c b.c c.c is' ],
+    [ '$(shell echo hi; echo there)',         'hi there' ],
+    [ "\$(shell \"$^X\" -pe 1 \$(mktmp hi))", 'hi' ],
+    [ '$(wildcard Chan* RE*)',                'Changes README' ],
+    [ '$(addprefix x/,1 2)',                  'x/1 x/2' ],
+    [ '$(notdir x/1 x/2)',                    '1 2' ],
+    [ '$(dir x/1 y/2 3)',                     'x y ./' ],
 );
 for my $l (@SUBs) {
     my ( $in, $expected, $err ) = @$l;
@@ -102,6 +100,7 @@ is ref($m), 'Make';
 eval { $m->Make('all') };
 is $@, '',;
 
+my ( undef, $tempfile ) = tempfile;
 $m = Make->new( Makefile => \sprintf <<'EOF', $tempfile );
 var = value
 tempfile = %s

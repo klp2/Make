@@ -229,17 +229,17 @@ sub evaluate_macro {
         if ( defined $subst ) {
             my @parts = split /=/, $subst, 2;
             die "Syntax error: expected form x=y in '$subst'" if @parts != 2;
-            $value = join ' ', Make::Functions::patsubst( undef, join ",", @parts, $value );
+            $value = join ' ', Make::Functions::patsubst( @parts, $value );
         }
     }
-    elsif ( $key =~ /([\w._]+)(?:,(\S+))?\s+(.*)$/ ) {
-        my ( $func, $first_comma, $args ) = ( $1, $2, $3 );
+    elsif ( $key =~ /([\w._]+)\s+(.*)$/ ) {
+        my ( $func, $args ) = ( $1, $2 );
         my $code;
         foreach my $package (@$function_packages) {
             last if $code = $package->can($func);
         }
         die "'$func' not found in (@$function_packages)" if !defined $code;
-        $value = join ' ', $code->( $first_comma, $args );
+        $value = join ' ', $code->( split /,/, $args );
     }
     return $value;
 }

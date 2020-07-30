@@ -8,34 +8,35 @@ our $VERSION = '1.2.0';
 my @temp_handles;    # so they don't get destroyed before end of program
 
 sub wildcard {
-    my ( $first_comma, $text_input ) = @_;
-    return glob $text_input;
+    my @args = @_;
+    ## no critic (BuiltinFunctions::RequireBlockMap)
+    return map glob, @args;
+    ## use critic
 }
 
 sub shell {
-    my ( $first_comma, $text_input ) = @_;
-    my $value = `$text_input`;
+    my @args  = @_;
+    my $value = `@args`;
     chomp $value;
     return split "\n", $value;
 }
 
 sub addprefix {
-    my ( $first_comma, $text_input ) = @_;
-    $text_input =~ /([^,]*),(.*)/;
+    my ( $prefix, $text_input ) = @_;
     ## no critic (BuiltinFunctions::RequireBlockMap)
-    return map $1 . $_, split /\s+/, $2;
+    return map $prefix . $_, split /\s+/, $text_input;
     ## use critic
 }
 
 sub notdir {
-    my ( $first_comma, $text_input ) = @_;
-    my @files = split( /\s+/, $text_input );
+    my ($text_input) = @_;
+    my @files = split /\s+/, $text_input;
     s#^.*/## for @files;
     return @files;
 }
 
 sub dir {
-    my ( $first_comma, $text_input ) = @_;
+    my ($text_input) = @_;
     my @files = split( /\s+/, $text_input );
     foreach (@files) {
         $_ = './' unless s#^(.*)/[^/]*$#$1#;
@@ -44,34 +45,25 @@ sub dir {
 }
 
 sub subst {
-    my ( $first_comma, $text_input ) = @_;
-    my ( $from, $to, $value ) = split /,/, $text_input, 3;
+    my ( $from, $to, $value ) = @_;
     $from = quotemeta $from;
     $value =~ s/$from/$to/g;
     return $value;
 }
 
 sub patsubst {
-    my ( $first_comma, $text_input ) = @_;
-    my ( $from, $to, $value ) = split /,/, $text_input, 3;
+    my ( $from, $to, $value ) = @_;
     $from = quotemeta $from;
     $value =~ s/$from(?=(?:\s|\z))/$to/g;
     return $value;
 }
 
 sub mktmp {
-    my ( $file, $content, $fh ) = @_;
-    if ( defined $file ) {
-        open( my $tmp, ">", $file ) or die "Cannot open $file: $!";
-        $fh = $tmp;
-    }
-    else {
-        $fh = File::Temp->new;    # default UNLINK = 1
-        push @temp_handles, $fh;
-        $file = $fh->filename;
-    }
-    print $fh $content;
-    return $file;
+    my ($text_input) = @_;
+    my $fh = File::Temp->new;    # default UNLINK = 1
+    push @temp_handles, $fh;
+    print $fh $text_input;
+    return $fh->filename;
 }
 
 =head1 NAME
@@ -93,10 +85,10 @@ Package that contains the various functions used by L<Make>.
 Implements GNU-make style functions. The call interface for all these
 Perl functions is:
 
-    my @return_list = func($first_comma, $text_args);
+    my @return_list = func(@args);
 
-The C<$first_comma> will be undefined unless there was a comma and word
-straight after the function name.
+The args will have been extracted from the Makefile, comma-separated,
+as in GNU make.
 
 =head2 wildcard
 
@@ -135,14 +127,11 @@ a word.
 
 =head2 mktmp
 
-Like the dmake macro. The C<$first_comma> is the optional file argument
-specified after an immediate comma (C<,>).
+Like the dmake macro, but does not support a file argument straight
+after the macro-name.
 
-The text after further whitespace is inserted in that file, whose name
-is returned. E.g.:
-
-    $(mktmp,file.txt $(shell echo hi))
-    # becomes file.txt, and that file contains "hi"
+The text after further whitespace is inserted in a temporary file,
+whose name is returned. E.g.:
 
     $(mktmp $(shell echo hi))
     # becomes a temporary filename, and that file contains "hi"
