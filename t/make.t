@@ -118,5 +118,7 @@ is_deeply $got, ['@echo $@ $^ $< $(var) >"$(tempfile)"'] or diag explain $got;
 my $all_rule = $m->Target('all')->colon;
 $got = $all_rule->depend;
 is_deeply $got, ['other'] or diag explain $got;
+$got = $all_rule->auto_vars;
+is_deeply [ keys %$got ], [qw( @ * ^ ? < )] or diag explain $got;
 
 done_testing;

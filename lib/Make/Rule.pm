@@ -109,16 +109,21 @@ sub out_of_date {
     return !$count;
 }
 
+sub auto_vars {
+    my ($self) = @_;
+    my %var;
+    tie %var, 'Make::Rule::Vars', $self;
+    return \%var;
+}
+
 #
 # Return commands to apply rule with variables expanded
 # - May need vpath processing
 #
 sub exp_command {
-    my $self = shift;
-    my $info = $self->Info;
-    my %var;
-    tie %var, 'Make::Rule::Vars', $self;
-    my @subs_args = ( $info->function_packages, [ \%var, $info->vars, \%ENV ] );
+    my $self      = shift;
+    my $info      = $self->Info;
+    my @subs_args = ( $info->function_packages, [ $self->auto_vars, $info->vars, \%ENV ] );
     my @cmd       = map Make::subsvars( $_, @subs_args ), @{ $self->command };
     return (wantarray) ? @cmd : \@cmd;
 }
