@@ -601,7 +601,6 @@ sub new {
     load_modules( @{ $self->function_packages } );
     my $ast = parse_makefile( \*DATA );
     $self->process_ast_bit(@$_) for @$ast;
-    $self->parse( $self->{Makefile} );
     return $self;
 }
 
@@ -612,7 +611,8 @@ Make - Pure-Perl implementation of a somewhat GNU-like make.
 =head1 SYNOPSIS
 
     require Make;
-    my $make = Make->new(Makefile => $file);
+    my $make = Make->new;
+    $make->parse($file);
     $make->Make(@ARGV);
 
     # to see what it would have done
@@ -629,10 +629,6 @@ Make - Pure-Perl implementation of a somewhat GNU-like make.
 
 =head1 DESCRIPTION
 
-The syntax of makefile accepted is reasonably generic, but I have not re-read
-any documentation yet, rather I have implemented my own mental model of how
-make works (then fixed it...).
-
 In addition to traditional
 
 	.c.o :
@@ -642,8 +638,6 @@ GNU make's 'pattern' rules e.g.
 
 	%.o : %.c
 		$(CC) -c ...
-
-Likewise a subset of GNU makes $(function arg...) syntax is supported.
 
 Via pure-perl-make Make has built perl/Tk from the C<MakeMaker> generated
 Makefiles...
@@ -671,17 +665,17 @@ Number of concurrent jobs to run while building. Not implemented.
 
 If true, then F<GNUmakefile> is looked for first.
 
-=head3 Makefile
-
-The file to parse. If not given, these files will be tried, in order:
-F<GNUmakefile> if L</GNU>, F<makefile>, F<Makefile>.
-
-If a scalar-ref, will be makefile text.
-
 =head3 FunctionPackages
 
 Array-ref of package names to search for GNU-make style
 functions. Defaults to L<Make::Functions>.
+
+=head2 parse
+
+Parses the given makefile. If none or C<undef>, these files will be tried,
+in order: F<GNUmakefile> if L</GNU>, F<makefile>, F<Makefile>.
+
+If a scalar-ref, will be makefile text.
 
 =head2 Make
 

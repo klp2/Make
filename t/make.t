@@ -5,8 +5,6 @@ use Make;
 use File::Spec;
 use File::Temp qw(tempfile);
 
-my $m = Make->new( Makefile => "Makefile" );
-
 my @LINES = ( [ "all : one \\\n  two\n", 'all : one two' ], );
 for my $l (@LINES) {
     my ( $in, $expected ) = @$l;
@@ -93,12 +91,15 @@ for my $l (@CMDs) {
     is_deeply $got, $expected;
 }
 
+my $m = Make->new( Makefile => "Makefile" );
+$m->parse("Makefile");
 is ref($m), 'Make';
 eval { $m->Make('all') };
 is $@, '',;
 
 my ( undef, $tempfile ) = tempfile;
-$m = Make->new( Makefile => \sprintf <<'EOF', $tempfile );
+$m = Make->new;
+$m->parse( \sprintf <<'EOF', $tempfile );
 var = value
 tempfile = %s
 targets = other

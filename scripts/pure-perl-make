@@ -16,9 +16,9 @@ chdir $opt{C} if $opt{C};
 my $info = Make->new(
     GNU      => $opt{'g'},
     Vars     => { MAKE => "$^X $0" },
-    Makefile => $opt{'f'},
     Jobs     => $opt{'j'},
 );
+$info->parse($opt{'f'});
 
 if ( $opt{'D'} ) {
     require Data::Dumper;
