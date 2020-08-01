@@ -1,12 +1,11 @@
-## no critic
 package Make::Rule;
-
-our $VERSION = '1.2.0';
 
 use strict;
 use warnings;
 use Carp;
 use Make::Rule::Vars;
+
+our $VERSION = '1.2.0';
 
 # Bottom level 'rule' package
 # An instance exists for each ':' or '::' rule in the makefile.
@@ -124,7 +123,9 @@ sub exp_command {
     my $self      = shift;
     my $info      = $self->Info;
     my @subs_args = ( $info->function_packages, [ $self->auto_vars, $info->vars, \%ENV ] );
-    my @cmd       = map Make::subsvars( $_, @subs_args ), @{ $self->command };
+    ## no critic (BuiltinFunctions::RequireBlockMap)
+    my @cmd = map Make::subsvars( $_, @subs_args ), @{ $self->command };
+    ## use critic
     return (wantarray) ? @cmd : \@cmd;
 }
 
@@ -174,6 +175,7 @@ sub find_commands {
             $self->command( $rule[1] );
         }
     }
+    return;
 }
 
 #
@@ -209,6 +211,7 @@ sub Print {
         print STDERR "No commands for ", $self->Name, "\n" unless ( $self->target->phony );
     }
     print "\n";
+    return;
 }
 
 1;
