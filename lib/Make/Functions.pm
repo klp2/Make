@@ -24,20 +24,20 @@ sub shell {
 sub addprefix {
     my ( $prefix, $text_input ) = @_;
     ## no critic (BuiltinFunctions::RequireBlockMap)
-    return map $prefix . $_, split /\s+/, $text_input;
+    return map $prefix . $_, @{ Make::tokenize($text_input) };
     ## use critic
 }
 
 sub notdir {
     my ($text_input) = @_;
-    my @files = split /\s+/, $text_input;
+    my @files = @{ Make::tokenize($text_input) };
     s#^.*/## for @files;
     return @files;
 }
 
 sub dir {
     my ($text_input) = @_;
-    my @files = split( /\s+/, $text_input );
+    my @files = @{ Make::tokenize($text_input) };
     foreach (@files) {
         $_ = './' unless s#^(.*)/[^/]*$#$1#;
     }
