@@ -4,15 +4,11 @@ perl:
 
 jobs:
   include:
-    - perl: "5.32"
-    - perl: "5.26"
+    - perl: "5.30"
       env: COVERAGE=1
     - perl: "5.14"
       env: RELEASE_TESTING=1
     - perl: "5.8"
-    - perl: "blead"
-  allow_failures:
-    - perl: blead
 
 before_install:
   - eval $(curl https://travis-perl.github.io/init) --auto
