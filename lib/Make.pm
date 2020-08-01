@@ -528,12 +528,10 @@ sub parse_args {
 }
 ## use critic
 
-## no critic (RequireArgUnpacking)
 sub apply {
-    my $self   = shift;
-    my $method = shift;
+    my ( $self, $method, @args ) = @_;
     $self->NextPass;
-    my ( $vars, $targets ) = parse_args(@_);
+    my ( $vars, $targets ) = parse_args(@args);
     $self->set_var(@$_) for @$vars;
     foreach my $t ( @{ $self->{'Targets'} } ) {
         my $c = $t->colon;
@@ -544,41 +542,41 @@ sub apply {
     foreach (@$targets) {
         my $t = $self->Target($_);
         unless ( defined $t ) {
-            print STDERR join( ' ', $method, @_ ), "\n";
-            die "Cannot '$method' - no target $_";
+            die join( ' ', $method, @args ), "\n", "Cannot '$method' - no target $_";
         }
         push @results, $t->recurse($method);
     }
     return @results;
 }
-## use critic
 
 # Spew a shell script to perfom the 'make' e.g. make -n
-## no critic (Subroutines::RequireFinalReturn RequireArgUnpacking)
 sub Script {
-    for ( shift->apply( Make => @_ ) ) {
+    my ( $self, @args ) = @_;
+    my $com = ( $^O eq 'MSWin32' ) ? 'rem ' : '# ';
+    my @results;
+    for ( $self->apply( Make => @args ) ) {
         my ( $name, @cmd ) = @$_;
-        my $com = ( $^O eq 'MSWin32' ) ? 'rem ' : '# ';
-        print $com, $name, "\n";
-        foreach my $line (@cmd) {
-            $line =~ s/^([\@\s-]*)//;
-            print "$line\n";
-        }
+        push @results, $com . $name . "\n";
+        ## no critic (BuiltinFunctions::RequireBlockMap)
+        push @results, map parse_cmdline($_)->{line} . "\n", @cmd;
+        ## use critic
     }
+    return @results;
 }
 
 sub Print {
-    shift->apply( Print => @_ );
+    my ( $self, @args ) = @_;
+    return $self->apply( Print => @args );
 }
 
 sub Make {
-    my $self = shift;
-    for ( $self->apply( Make => @_ ) ) {
+    my ( $self, @args ) = @_;
+    for ( $self->apply( Make => @args ) ) {
         my ( $name, @cmd ) = @$_;
         $self->exec($_) for @cmd;
     }
+    return;
 }
-## use critic
 
 sub new {
     my ( $class, %args ) = @_;
@@ -616,7 +614,7 @@ Make - Pure-Perl implementation of a somewhat GNU-like make.
     $make->Make(@ARGV);
 
     # to see what it would have done
-    $make->Script(@ARGV);
+    print $make->Script(@ARGV);
 
     # to see an expanded version of the makefile
     $make->Print(@ARGV);

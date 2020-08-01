@@ -28,7 +28,7 @@ elsif ( $opt{'p'} ) {
     $info->Print(@ARGV);
 }
 elsif ( $opt{'n'} ) {
-    $info->Script(@ARGV);
+    print $info->Script(@ARGV);
 }
 else {
     $info->Make(@ARGV);
