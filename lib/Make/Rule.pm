@@ -19,43 +19,11 @@ sub target {
 }
 
 sub depend {
-    my $self = shift;
-    if (@_) {
-        my $name = $self->target->Name;
-        my $dep  = shift;
-        confess "dependents $dep are not an array reference" unless ( 'ARRAY' eq ref $dep );
-        foreach my $file (@$dep) {
-            unless ( exists $self->{DEPHASH}{$file} ) {
-                $self->{DEPHASH}{$file} = 1;
-                push( @{ $self->{DEPEND} }, $file );
-            }
-        }
-    }
-    return $self->{DEPEND};
+    return shift->{DEPEND};
 }
 
 sub command {
-    my $self = shift;
-    if (@_) {
-        my $cmd = shift;
-        confess "commands $cmd are not an array reference" unless ( 'ARRAY' eq ref $cmd );
-        if (@$cmd) {
-            if ( @{ $self->{COMMAND} } ) {
-                warn "Command for " . $self->target->Name, " redefined",
-                    "Was:", join( "\n", @{ $self->{COMMAND} } ), "\n",
-                    "Now:", join( "\n", @$cmd ), "\n";
-            }
-            $self->{COMMAND} = $cmd;
-        }
-        else {
-            if ( @{ $self->{COMMAND} } ) {
-                DEBUG
-                    and warn "Command for " . $self->target->Name, " retained\n",
-                    "Was:", join( "\n", @{ $self->{COMMAND} } ), "\n";
-            }
-        }
-    }
-    return $self->{COMMAND};
+    return shift->{COMMAND};
 }
 
 #
@@ -106,31 +74,22 @@ sub exp_command {
     return (wantarray) ? @cmd : \@cmd;
 }
 
-#
-# clone creates a new rule derived from an existing rule, but
-# with a different target. Used when left hand side was a variable.
-# perhaps should be used for dot/pattern rule processing too.
-#
-sub clone {
-    my ( $self, $target ) = @_;
-    my %hash = %$self;
-    $hash{TARGET}  = $target;
-    $hash{DEPEND}  = [ @{ $self->{DEPEND} } ];
-    $hash{DEPHASH} = { %{ $self->{DEPHASH} } };
-    return bless \%hash, ref $self;
-}
-
 sub new {
     my ( $class, $target, $kind, $depend, $command ) = @_;
-    my $self = bless {
-        TARGET  => $target,              # parent target (left hand side)
-        KIND    => $kind,                # : or ::
-        DEPEND  => [], DEPHASH => {},    # right hand args
-        COMMAND => []                    # command(s)
+    confess "dependents $depend are not an array reference"
+        if 'ARRAY' ne ref $depend;
+    confess "commands $command are not an array reference"
+        if 'ARRAY' ne ref $command;
+    return bless {
+        TARGET  => $target,     # parent target (left hand side)
+        KIND    => $kind,       # : or ::
+        DEPEND  => $depend,     # right hand args
+        COMMAND => $command,    # commands
     }, $class;
-    $self->depend($depend)   if $depend;
-    $self->command($command) if $command;
-    return $self;
+}
+
+sub kind {
+    return shift->{KIND};
 }
 
 #
@@ -194,8 +153,7 @@ Make::Rule - a rule with prerequisites and recipe
 
 =head1 SYNOPSIS
 
-    my $rule = Make::Rule->new( $target, $kind[, $depend[, $command]] );
-    my $clone = $rule->clone($target);
+    my $rule = Make::Rule->new( $target, $kind, \@depend, \@command );
     my @name_commands = $rule->Make;
     my $target = $rule->target; # Make::Target obj
     my @deps = @{ $rule->depend };

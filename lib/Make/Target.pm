@@ -17,9 +17,11 @@ use Make::Rule;
 sub new {
     my ( $class, $name, $info ) = @_;
     return bless {
-        NAME     => $name,    # name of thing
-        MAKEFILE => $info,    # Makefile context
-        Pass     => 0         # Used to determine if 'done' this sweep
+        NAME      => $name,    # name of thing
+        MAKEFILE  => $info,    # Makefile context
+        RULES     => [],
+        RULE_TYPE => undef,    # undef, :, ::
+        Pass      => 0,        # Used to determine if 'done' this sweep
     }, $class;
 }
 
@@ -34,39 +36,17 @@ sub phony {
     return $self->Info->phony( $self->Name );
 }
 
-## no critic (RequireArgUnpacking)
-sub colon {
-    my $self = shift;
-    if (@_) {
-        if ( exists $self->{COLON} ) {
-            my $dep = $self->{COLON};
-            if ( @_ == 1 ) {
-
-                # merging an existing rule
-                my $other = shift;
-                $dep->depend( scalar $other->depend );
-                $dep->command( $other->command );
-            }
-            else {
-                $dep->depend(shift);
-                $dep->command(shift);
-            }
-        }
-        else {
-            $self->{COLON} = ( @_ == 1 ) ? shift->clone($self) : Make::Rule->new( $self, ':', @_ );
-        }
-    }
-    return exists $self->{COLON} ? $self->{COLON} : ();
+sub rules {
+    return shift->{RULES};
 }
 
-sub dcolon {
-    my $self = shift;
-    if (@_) {
-        my $rule = ( @_ == 1 ) ? shift->clone($self) : Make::Rule->new( $self, '::', @_ );
-        $self->{DCOLON} = [] unless ( exists $self->{DCOLON} );
-        push( @{ $self->{DCOLON} }, $rule );
-    }
-    return ( exists $self->{DCOLON} ) ? @{ $self->{DCOLON} } : ();
+sub add_rule {
+    my ( $self, $rule ) = @_;
+    my $new_kind = $rule->kind;
+    my $kind     = $self->{RULE_TYPE} ||= $new_kind;
+    die "Target '$self->{NAME}' had '$kind' but tried to add '$new_kind'"
+        if $kind ne $new_kind;
+    return push @{ shift->{RULES} }, $rule;
 }
 
 sub Name {
@@ -96,7 +76,7 @@ sub recurse {
     return if $self->done;
     my $info = $self->Info;
     my @results;
-    foreach my $rule ( $self->colon, $self->dcolon ) {
+    foreach my $rule ( @{ $self->rules } ) {
         foreach my $dep ( @{ $rule->depend } ) {
             my $t = $info->Target($dep);
             if ( defined $t ) {

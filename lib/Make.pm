@@ -10,6 +10,7 @@ use Config;
 use Cwd;
 use File::Spec;
 use Make::Target ();
+use Make::Rule   ();
 use File::Temp;
 use Text::Balanced qw(extract_bracketed);
 ## no critic (ValuesAndExpressions::ProhibitConstantPragma)
@@ -50,8 +51,7 @@ sub suffixes {
 sub Target {
     my ( $self, $target ) = @_;
     unless ( exists $self->{Depend}{$target} ) {
-        my $t = Make::Target->new( $target, $self );
-        $self->{Depend}{$target} = $t;
+        my $t = $self->{Depend}{$target} = Make::Target->new( $target, $self );
         if ( $target =~ /%/ ) {
             $self->{Pattern}{$target} = $t;
         }
@@ -99,41 +99,28 @@ sub locate {
 }
 
 #
-# Convert traditional .c.o rules into GNU-like into %o : %c
+# Convert traditional .c.o rules into GNU-like into %.o : %.c
 #
 sub dotrules {
     my ($self) = @_;
-    foreach my $t ( sort keys %{ $self->{Dot} } ) {
-        my $e = $self->expand($t);
-        $self->{Dot}{$e} = delete $self->{Dot}{$t} unless ( $t eq $e );
-    }
-    my (@suffix) = $self->suffixes;
-    foreach my $t (@suffix) {
-        my $d;
-        my $r = delete $self->{Dot}{$t};
-        if ( defined $r ) {
-            my @rule = ( $r->colon ) ? ( @{ $r->colon->depend } ) : ();
-            if (@rule) {
-                delete $self->{Dot}{ $t->Name };
-                print STDERR $t->Name, " has dependants\n";
-                push( @{ $self->{Targets} }, $r );
-            }
-            else {
-                DEBUG and print STDERR "Build \% : \%$t\n";
-                $self->Target('%')->dcolon( [ '%' . $t ], $r->colon->command );
-            }
-        }
-        foreach my $d (@suffix) {
-            $r = delete $self->{Dot}{ $t . $d };
-            if ( defined $r ) {
-                DEBUG and print STDERR "Build \%$d : \%$t\n";
-                $self->Target( '%' . $d )->dcolon( [ '%' . $t ], $r->colon->command );
-            }
+    my @suffix = $self->suffixes;
+    my $Dot    = delete $self->{Dot};
+    foreach my $f (@suffix) {
+        foreach my $t (@suffix) {
+            next unless my $r = delete $Dot->{ $f . $t };
+            DEBUG and print STDERR "Build %$t : %$f\n";
+            my $target   = $self->Target( '%' . $t );
+            my @dotrules = @{ $r->rules };
+            die "Failed on pattern rule for '$f$t', too many rules"
+                if @dotrules != 1;
+            my $thisrule = $dotrules[0];
+            die "Failed on pattern rule for '$f$t', no prereqs allowed"
+                if @{ $thisrule->depend };
+            my $rule = Make::Rule->new( $target, '::', [ '%' . $f ], $thisrule->command );
+            $self->Target( '%' . $t )->add_rule($rule);
         }
     }
-    foreach my $t ( sort keys %{ $self->{Dot} } ) {
-        push( @{ $self->{Targets} }, delete $self->{Dot}{$t} );
-    }
+    push @{ $self->{Targets} }, @$Dot{ sort keys %$Dot };
     return;
 }
 
@@ -174,7 +161,7 @@ sub patrule {
         my $Pat;
         if ( defined( $Pat = patmatch( $key, $target ) ) ) {
             my $t = $self->{Pattern}{$key};
-            foreach my $rule ( $t->dcolon ) {
+            foreach my $rule ( @{ $t->rules } ) {
                 if ( my @dep = @{ $rule->depend } ) {
                     my $dep = $dep[0];
                     $dep =~ s/%/$Pat/g;
@@ -362,13 +349,9 @@ sub process_ast_bit {
         ($depends) = tokenize( $self->expand($depends) );
         ($targets) = tokenize( $self->expand($targets) );
         foreach (@$targets) {
-            my $t = $self->Target($_);
-            if ( $kind eq '::' || /%/ ) {
-                $t->dcolon( $depends, $cmnds );
-            }
-            else {
-                $t->colon( $depends, $cmnds );
-            }
+            my $t    = $self->Target($_);
+            my $rule = Make::Rule->new( $t, $kind, $depends, $cmnds );
+            $t->add_rule($rule);
         }
     }
     return;
@@ -433,7 +416,9 @@ sub pseudos {
         my $t = delete $self->{Dot}{ '.' . $key };
         if ( defined $t ) {
             $self->{$key} = {};
-            foreach my $dep ( @{ $t->colon->depend } ) {
+            ## no critic (BuiltinFunctions::RequireBlockMap)
+            foreach my $dep ( map @{ $_->depend }, @{ $t->rules } ) {
+                ## use critic
                 $self->{$key}{$dep} = 1;
             }
         }
@@ -534,8 +519,7 @@ sub apply {
     my ( $vars, $targets ) = parse_args(@args);
     $self->set_var(@$_) for @$vars;
     foreach my $t ( @{ $self->{'Targets'} } ) {
-        my $c = $t->colon;
-        $c->find_commands if $c;
+        $_->find_commands for @{ $t->rules };
     }
     @$targets = ( $self->{'Targets'}[0] )->Name unless (@$targets);
     my @results;
@@ -620,10 +604,12 @@ Make - Pure-Perl implementation of a somewhat GNU-like make.
     $make->Print(@ARGV);
 
     my $targ = $make->Target($name);
-    $targ->colon([dependency...],[command...]);
-    $targ->dcolon([dependency...],[command...]);
-    my @depends  = @{ $targ->colon->depend };
-    my @commands = @{ $targ->colon->command };
+    my $rule = Make::Rule->new(\@depends, \@command);
+    $targ->add_rule($rule);
+    my @rules = @{ $targ->rules };
+
+    my @depends  = @{ $rule->depend };
+    my @commands = @{ $rule->command };
 
 =head1 DESCRIPTION
 
