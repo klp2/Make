@@ -50,7 +50,7 @@ sub suffixes {
 sub Target {
     my ( $self, $target ) = @_;
     unless ( exists $self->{Depend}{$target} ) {
-        my $t = Make::Target->new( $self, $target );
+        my $t = Make::Target->new( $target, $self );
         $self->{Depend}{$target} = $t;
         if ( $target =~ /%/ ) {
             $self->{Pattern}{$target} = $t;

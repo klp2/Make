@@ -15,11 +15,11 @@ use Make::Rule;
 # the left hand side of a rule i.e. for each thing that can be made.
 #
 sub new {
-    my ( $class, $info, $target ) = @_;
+    my ( $class, $name, $info ) = @_;
     return bless {
-        NAME     => $target,    # name of thing
-        MAKEFILE => $info,      # Makefile context
-        Pass     => 0           # Used to determine if 'done' this sweep
+        NAME     => $name,    # name of thing
+        MAKEFILE => $info,    # Makefile context
+        Pass     => 0         # Used to determine if 'done' this sweep
     }, $class;
 }
 
