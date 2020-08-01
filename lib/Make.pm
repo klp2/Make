@@ -18,6 +18,7 @@ use constant DEBUG => $ENV{MAKE_DEBUG};
 ## use critic
 require Make::Functions;
 
+my $DEFAULTS_AST;
 my %date;
 my $generation = 0;    # lexical cross-package scope used!
 
@@ -578,8 +579,8 @@ sub new {
     $self->set_var( 'AR',     $Config{ar} );
     $self->set_var( 'CFLAGS', $Config{optimize} );
     load_modules( @{ $self->function_packages } );
-    my $ast = parse_makefile( \*DATA );
-    $self->process_ast_bit(@$_) for @$ast;
+    $DEFAULTS_AST ||= parse_makefile( \*DATA );
+    $self->process_ast_bit(@$_) for @$DEFAULTS_AST;
     return $self;
 }
 
