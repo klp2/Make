@@ -54,9 +54,9 @@ sub out_of_date {
 }
 
 sub auto_vars {
-    my ($self) = @_;
+    my ( $self, $target ) = @_;
     my %var;
-    tie %var, 'Make::Rule::Vars', $self;
+    tie %var, 'Make::Rule::Vars', $self, $target;
     return \%var;
 }
 
@@ -67,7 +67,7 @@ sub auto_vars {
 sub exp_command {
     my $self      = shift;
     my $info      = $self->target->Info;
-    my @subs_args = ( $info->function_packages, [ $self->auto_vars, $info->vars, \%ENV ] );
+    my @subs_args = ( $info->function_packages, [ $self->auto_vars( $self->target ), $info->vars, \%ENV ] );
     ## no critic (BuiltinFunctions::RequireBlockMap)
     my @cmd = map Make::subsvars( $_, @subs_args ), @{ $self->command };
     ## use critic

@@ -115,10 +115,11 @@ is $contents, "other Changes README Changes value\n";
 my ($other_rule) = @{ $m->Target('other')->rules };
 my $got = $other_rule->command;
 is_deeply $got, ['@echo $@ $^ $< $(var) >"$(tempfile)"'] or diag explain $got;
-my ($all_rule) = @{ $m->Target('all')->rules };
+my $all_target = $m->Target('all');
+my ($all_rule) = @{ $all_target->rules };
 $got = $all_rule->depend;
 is_deeply $got, ['other'] or diag explain $got;
-$got = $all_rule->auto_vars;
+$got = $all_rule->auto_vars($all_target);
 is_deeply [ keys %$got ], [qw( @ * ^ ? < )] or diag explain $got;
 
 $m = Make->new;
