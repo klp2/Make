@@ -71,8 +71,9 @@ sub done {
     return 0;
 }
 
+# as part of "out of date" processing, if any child is remade, I need too
 sub recurse {
-    my ( $self, $method, @args ) = @_;
+    my ( $self, $method ) = @_;
     return if $self->done;
     my $info = $self->Info;
     my @results;
@@ -80,14 +81,14 @@ sub recurse {
         foreach my $dep ( @{ $rule->depend } ) {
             my $t = $info->Target($dep);
             if ( defined $t ) {
-                push @results, $t->recurse( $method, @args );
+                push @results, $t->recurse($method);
             }
             elsif ( !$info->exists($dep) ) {
                 my $dir = cwd();
                 die "Cannot recurse $method - no target $dep in $dir";
             }
         }
-        push @results, $rule->$method(@args);
+        push @results, $rule->$method($self);
     }
     return @results;
 }

@@ -116,7 +116,7 @@ sub dotrules {
             my $thisrule = $dotrules[0];
             die "Failed on pattern rule for '$f$t', no prereqs allowed"
                 if @{ $thisrule->depend };
-            my $rule = Make::Rule->new( $target, '::', [ '%' . $f ], $thisrule->command );
+            my $rule = Make::Rule->new( '::', [ '%' . $f ], $thisrule->command );
             $self->Target( '%' . $t )->add_rule($rule);
         }
     }
@@ -348,11 +348,8 @@ sub process_ast_bit {
         my ( $targets, $kind, $depends, $cmnds ) = @args;
         ($depends) = tokenize( $self->expand($depends) );
         ($targets) = tokenize( $self->expand($targets) );
-        foreach (@$targets) {
-            my $t    = $self->Target($_);
-            my $rule = Make::Rule->new( $t, $kind, $depends, $cmnds );
-            $t->add_rule($rule);
-        }
+        my $rule = Make::Rule->new( $kind, $depends, $cmnds );
+        $self->Target($_)->add_rule($rule) for @$targets;
     }
     return;
 }
@@ -519,7 +516,7 @@ sub apply {
     my ( $vars, $targets ) = parse_args(@args);
     $self->set_var(@$_) for @$vars;
     foreach my $t ( @{ $self->{'Targets'} } ) {
-        $_->find_commands for @{ $t->rules };
+        $_->find_commands($t) for @{ $t->rules };
     }
     @$targets = ( $self->{'Targets'}[0] )->Name unless (@$targets);
     my @results;
@@ -604,7 +601,7 @@ Make - Pure-Perl implementation of a somewhat GNU-like make.
     $make->Print(@ARGV);
 
     my $targ = $make->Target($name);
-    my $rule = Make::Rule->new(\@depends, \@command);
+    my $rule = Make::Rule->new(':', \@depends, \@command);
     $targ->add_rule($rule);
     my @rules = @{ $targ->rules };
 

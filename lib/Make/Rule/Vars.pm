@@ -43,8 +43,8 @@ sub FETCH {
     DEBUG and print STDERR "FETCH $v for ", $target->Name, "\n";
     return $target->Name if $v eq '@';
     return $target->Base if $v eq '*';
-    return join ' ', @{ $rule->depend } if $v eq '^';
-    return join ' ', $rule->out_of_date if $v eq '?';
+    return join ' ', @{ $rule->depend }          if $v eq '^';
+    return join ' ', $rule->out_of_date($target) if $v eq '?';
     return ( @{ $rule->depend } )[0] if $v eq '<';
     return;
 }

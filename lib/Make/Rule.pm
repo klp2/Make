@@ -14,10 +14,6 @@ our $VERSION = '1.2.0';
 # An instance exists for each ':' or '::' rule in the makefile.
 # The commands and dependancies are kept here.
 
-sub target {
-    return shift->{TARGET};
-}
-
 sub depend {
     return shift->{DEPEND};
 }
@@ -32,17 +28,17 @@ sub command {
 # In list context the things we are out-of-date with e.g. magic $? variable
 #
 sub out_of_date {
-    my $self  = shift;
-    my $info  = $self->target->Info;
+    my ( $self, $target ) = @_;
+    my $info  = $target->Info;
     my @dep   = ();
-    my $tdate = $self->target->date;
+    my $tdate = $target->date;
     my $count = 0;
     foreach my $dep ( @{ $self->depend } ) {
         my $date = $info->date($dep);
         $count++;
         if ( !defined($date) || !defined($tdate) || $date < $tdate ) {
 
-            # warn $self->target->Name." ood wrt ".$dep."\n";
+            # warn $target->Name." ood wrt ".$dep."\n";
             return 1 unless wantarray;
             push( @dep, $dep );
         }
@@ -65,9 +61,9 @@ sub auto_vars {
 # - May need vpath processing
 #
 sub exp_command {
-    my $self      = shift;
-    my $info      = $self->target->Info;
-    my @subs_args = ( $info->function_packages, [ $self->auto_vars( $self->target ), $info->vars, \%ENV ] );
+    my ( $self, $target ) = @_;
+    my $info      = $target->Info;
+    my @subs_args = ( $info->function_packages, [ $self->auto_vars($target), $info->vars, \%ENV ] );
     ## no critic (BuiltinFunctions::RequireBlockMap)
     my @cmd = map Make::subsvars( $_, @subs_args ), @{ $self->command };
     ## use critic
@@ -75,13 +71,12 @@ sub exp_command {
 }
 
 sub new {
-    my ( $class, $target, $kind, $depend, $command ) = @_;
+    my ( $class, $kind, $depend, $command ) = @_;
     confess "dependents $depend are not an array reference"
         if 'ARRAY' ne ref $depend;
     confess "commands $command are not an array reference"
         if 'ARRAY' ne ref $command;
     return bless {
-        TARGET  => $target,     # parent target (left hand side)
         KIND    => $kind,       # : or ::
         DEPEND  => $depend,     # right hand args
         COMMAND => $command,    # commands
@@ -98,11 +93,11 @@ sub kind {
 #  - perhaps in ->commands of derived ':' class?
 #
 sub find_commands {
-    my ($self) = @_;
+    my ( $self, $target ) = @_;
     if ( !@{ $self->{COMMAND} } && @{ $self->{DEPEND} } ) {
-        my $info = $self->target->Info;
+        my $info = $target->Info;
         my @dep  = $self->depend;
-        my @rule = $info->patrule( $self->target->Name );
+        my @rule = $info->patrule( $target->Name );
         if (@rule) {
             $self->depend( $rule[0] );
             $self->command( $rule[1] );
@@ -115,9 +110,9 @@ sub find_commands {
 # Normal 'make' method
 #
 sub Make {
-    my $self = shift;
-    return unless ( $self->out_of_date );
-    return [ $self->target->Name, $self->exp_command ];
+    my ( $self, $target ) = @_;
+    return unless ( $self->out_of_date($target) );
+    return [ $target->Name, $self->exp_command($target) ];
 }
 
 #
@@ -127,21 +122,21 @@ sub Make {
 # - may be useful for writing makefiles from MakeMaker too...
 #
 sub Print {
-    my $self = shift;
+    my ( $self, $target ) = @_;
     my $file;
-    print $self->target->Name, ' ', $self->{KIND}, ' ';
+    print $target->Name, ' ', $self->{KIND}, ' ';
     foreach my $file ( $self->depend ) {
         print " \\\n   $file";
     }
     print "\n";
-    my @cmd = $self->exp_command;
+    my @cmd = $self->exp_command($target);
     if (@cmd) {
         foreach my $file (@cmd) {
             print "\t", $file, "\n";
         }
     }
     else {
-        print STDERR "No commands for ", $self->target->Name, "\n" unless ( $self->target->phony );
+        print STDERR "No commands for ", $target->Name, "\n" unless ( $self->target->phony );
     }
     print "\n";
     return;
@@ -153,14 +148,13 @@ Make::Rule - a rule with prerequisites and recipe
 
 =head1 SYNOPSIS
 
-    my $rule = Make::Rule->new( $target, $kind, \@depend, \@command );
-    my @name_commands = $rule->Make;
-    my $target = $rule->target; # Make::Target obj
+    my $rule = Make::Rule->new( $kind, \@depend, \@command );
+    my @name_commands = $rule->Make($target);
     my @deps = @{ $rule->depend };
     my @cmds = @{ $rule->command };
-    my @expanded_cmds = @{ $rule->exp_command }; # vars expanded
-    my @ood = $rule->out_of_date;
-    my $vars = $rule->auto_vars; # tied hash-ref
+    my @expanded_cmds = @{ $rule->exp_command($target) }; # vars expanded
+    my @ood = $rule->out_of_date($target);
+    my $vars = $rule->auto_vars($target); # tied hash-ref
 
 =head1 DESCRIPTION
 
