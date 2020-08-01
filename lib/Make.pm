@@ -107,7 +107,7 @@ sub dotrules {
     my @suffix = $self->suffixes;
     my $Dot    = delete $self->{Dot};
     foreach my $f (@suffix) {
-        foreach my $t (@suffix) {
+        foreach my $t ( '', @suffix ) {
             next unless my $r = delete $Dot->{ $f . $t };
             DEBUG and print STDERR "Build %$t : %$f\n";
             my $target   = $self->Target( '%' . $t );
