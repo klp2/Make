@@ -125,8 +125,7 @@ $m = Make->new;
 $m->parse( \sprintf <<'EOF', $tempfile );
 space = $() $()
 tempfile = %s
-all:
-	@echo "$(space)" >"$(tempfile)"
+all: ; @echo "$(space)" >"$(tempfile)"
 EOF
 $m->Make('all');
 $contents = do { local $/; open my $fh, '<', $tempfile; <$fh> };
