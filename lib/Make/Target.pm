@@ -73,6 +73,12 @@ sub Name {
     return shift->{NAME};
 }
 
+sub Base {
+    my $name = shift->{NAME};
+    $name =~ s/\.[^.]+$//;
+    return $name;
+}
+
 sub Info {
     return shift->{MAKEFILE};
 }

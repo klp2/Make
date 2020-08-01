@@ -18,24 +18,10 @@ sub target {
     return shift->{TARGET};
 }
 
-sub Name {
-    return shift->target->Name;
-}
-
-sub Base {
-    my $name = shift->target->Name;
-    $name =~ s/\.[^.]+$//;
-    return $name;
-}
-
-sub Info {
-    return shift->target->Info;
-}
-
 sub depend {
     my $self = shift;
     if (@_) {
-        my $name = $self->Name;
+        my $name = $self->target->Name;
         my $dep  = shift;
         confess "dependents $dep are not an array reference" unless ( 'ARRAY' eq ref $dep );
         foreach my $file (@$dep) {
@@ -55,7 +41,7 @@ sub command {
         confess "commands $cmd are not an array reference" unless ( 'ARRAY' eq ref $cmd );
         if (@$cmd) {
             if ( @{ $self->{COMMAND} } ) {
-                warn "Command for " . $self->Name, " redefined",
+                warn "Command for " . $self->target->Name, " redefined",
                     "Was:", join( "\n", @{ $self->{COMMAND} } ), "\n",
                     "Now:", join( "\n", @$cmd ), "\n";
             }
@@ -64,7 +50,7 @@ sub command {
         else {
             if ( @{ $self->{COMMAND} } ) {
                 DEBUG
-                    and warn "Command for " . $self->Name, " retained\n",
+                    and warn "Command for " . $self->target->Name, " retained\n",
                     "Was:", join( "\n", @{ $self->{COMMAND} } ), "\n";
             }
         }
@@ -79,7 +65,7 @@ sub command {
 #
 sub out_of_date {
     my $self  = shift;
-    my $info  = $self->Info;
+    my $info  = $self->target->Info;
     my @dep   = ();
     my $tdate = $self->target->date;
     my $count = 0;
@@ -88,7 +74,7 @@ sub out_of_date {
         $count++;
         if ( !defined($date) || !defined($tdate) || $date < $tdate ) {
 
-            # warn $self->Name." ood wrt ".$dep."\n";
+            # warn $self->target->Name." ood wrt ".$dep."\n";
             return 1 unless wantarray;
             push( @dep, $dep );
         }
@@ -112,7 +98,7 @@ sub auto_vars {
 #
 sub exp_command {
     my $self      = shift;
-    my $info      = $self->Info;
+    my $info      = $self->target->Info;
     my @subs_args = ( $info->function_packages, [ $self->auto_vars, $info->vars, \%ENV ] );
     ## no critic (BuiltinFunctions::RequireBlockMap)
     my @cmd = map Make::subsvars( $_, @subs_args ), @{ $self->command };
@@ -131,22 +117,19 @@ sub clone {
     $hash{TARGET}  = $target;
     $hash{DEPEND}  = [ @{ $self->{DEPEND} } ];
     $hash{DEPHASH} = { %{ $self->{DEPHASH} } };
-    my $obj = bless \%hash, ref $self;
-    return $obj;
+    return bless \%hash, ref $self;
 }
 
 sub new {
-    my $class  = shift;
-    my $target = shift;
-    my $kind   = shift;
-    my $self   = bless {
+    my ( $class, $target, $kind, $depend, $command ) = @_;
+    my $self = bless {
         TARGET  => $target,              # parent target (left hand side)
         KIND    => $kind,                # : or ::
         DEPEND  => [], DEPHASH => {},    # right hand args
         COMMAND => []                    # command(s)
     }, $class;
-    $self->depend(shift)  if (@_);
-    $self->command(shift) if (@_);
+    $self->depend($depend)   if $depend;
+    $self->command($command) if $command;
     return $self;
 }
 
@@ -158,9 +141,9 @@ sub new {
 sub find_commands {
     my ($self) = @_;
     if ( !@{ $self->{COMMAND} } && @{ $self->{DEPEND} } ) {
-        my $info = $self->Info;
+        my $info = $self->target->Info;
         my @dep  = $self->depend;
-        my @rule = $info->patrule( $self->Name );
+        my @rule = $info->patrule( $self->target->Name );
         if (@rule) {
             $self->depend( $rule[0] );
             $self->command( $rule[1] );
@@ -175,7 +158,7 @@ sub find_commands {
 sub Make {
     my $self = shift;
     return unless ( $self->out_of_date );
-    return [ $self->Name, $self->exp_command ];
+    return [ $self->target->Name, $self->exp_command ];
 }
 
 #
@@ -187,7 +170,7 @@ sub Make {
 sub Print {
     my $self = shift;
     my $file;
-    print $self->Name, ' ', $self->{KIND}, ' ';
+    print $self->target->Name, ' ', $self->{KIND}, ' ';
     foreach my $file ( $self->depend ) {
         print " \\\n   $file";
     }
@@ -199,10 +182,32 @@ sub Print {
         }
     }
     else {
-        print STDERR "No commands for ", $self->Name, "\n" unless ( $self->target->phony );
+        print STDERR "No commands for ", $self->target->Name, "\n" unless ( $self->target->phony );
     }
     print "\n";
     return;
 }
+
+=head1 NAME
+
+Make::Rule - a rule with prerequisites and recipe
+
+=head1 SYNOPSIS
+
+    my $rule = Make::Rule->new( $target, $kind[, $depend[, $command]] );
+    my $clone = $rule->clone($target);
+    my @name_commands = $rule->Make;
+    my $target = $rule->target; # Make::Target obj
+    my @deps = @{ $rule->depend };
+    my @cmds = @{ $rule->command };
+    my @expanded_cmds = @{ $rule->exp_command }; # vars expanded
+    my @ood = $rule->out_of_date;
+    my $vars = $rule->auto_vars; # tied hash-ref
+
+=head1 DESCRIPTION
+
+Represents a rule.
+
+=cut
 
 1;

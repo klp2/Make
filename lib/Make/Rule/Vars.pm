@@ -41,9 +41,9 @@ sub EXISTS {
 sub FETCH {
     my ( $self, $v ) = @_;
     my $rule = $$self;
-    DEBUG and print STDERR "FETCH $v for ", $rule->Name, "\n";
-    return $rule->Name if $v eq '@';
-    return $rule->Base if $v eq '*';
+    DEBUG and print STDERR "FETCH $v for ", $rule->target->Name, "\n";
+    return $rule->target->Name if $v eq '@';
+    return $rule->target->Base if $v eq '*';
     return join ' ', @{ $rule->depend } if $v eq '^';
     return join ' ', $rule->out_of_date if $v eq '?';
     return ( @{ $rule->depend } )[0] if $v eq '<';
