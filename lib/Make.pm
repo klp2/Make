@@ -12,6 +12,9 @@ use File::Spec;
 use Make::Target ();
 use File::Temp;
 use Text::Balanced qw(extract_bracketed);
+## no critic (ValuesAndExpressions::ProhibitConstantPragma)
+use constant DEBUG => $ENV{MAKE_DEBUG};
+## use critic
 require Make::Functions;
 
 my %date;
@@ -116,15 +119,14 @@ sub dotrules {
                 push( @{ $self->{Targets} }, $r );
             }
             else {
-                # print STDERR "Build \% : \%$t\n";
+                DEBUG and print STDERR "Build \% : \%$t\n";
                 $self->Target('%')->dcolon( [ '%' . $t ], $r->colon->command );
             }
         }
         foreach my $d (@suffix) {
             $r = delete $self->{Dot}{ $t . $d };
             if ( defined $r ) {
-
-                # print STDERR "Build \%$d : \%$t\n";
+                DEBUG and print STDERR "Build \%$d : \%$t\n";
                 $self->Target( '%' . $d )->dcolon( [ '%' . $t ], $r->colon->command );
             }
         }
@@ -157,8 +159,7 @@ sub exists {
     my ( $self, $name ) = @_;
     return 1 if ( exists $self->{Depend}{$name} );
     return 1 if defined $self->date($name);
-
-    # print STDERR "$name '$path' does not exist\n";
+    DEBUG and print STDERR "'$name' does not exist\n";
     return 0;
 }
 
@@ -168,8 +169,7 @@ sub exists {
 #
 sub patrule {
     my ( $self, $target ) = @_;
-
-    # print STDERR "Trying pattern for $target\n";
+    DEBUG and print STDERR "Trying pattern for $target\n";
     foreach my $key ( sort keys %{ $self->{Pattern} } ) {
         my $Pat;
         if ( defined( $Pat = patmatch( $key, $target ) ) ) {
@@ -178,8 +178,7 @@ sub patrule {
                 if ( my @dep = @{ $rule->depend } ) {
                     my $dep = $dep[0];
                     $dep =~ s/%/$Pat/g;
-
-                    # print STDERR "Try $target : $dep\n";
+                    DEBUG and print STDERR "Try $target : $dep\n";
                     if ( $self->exists($dep) ) {
                         foreach (@dep) {
                             s/%/$Pat/g;
@@ -535,7 +534,7 @@ sub apply {
     my $method = shift;
     $self->NextPass;
     my ( $vars, $targets ) = parse_args(@_);
-    $self->set_var(@$_) for @$vars;    # print STDERR "OVERRIDE: $1 = $2\n";
+    $self->set_var(@$_) for @$vars;
     foreach my $t ( @{ $self->{'Targets'} } ) {
         my $c = $t->colon;
         $c->find_commands if $c;
@@ -750,6 +749,11 @@ the expanded text will be replaced with "b". This is intended for file
 suffixes.
 
 For GNU-make style functions, see L<Make::Functions>.
+
+=head1 DEBUGGING
+
+To see debugging messages on C<STDERR>, set environment variable
+C<MAKE_DEBUG> to a true value;
 
 =head1 BUGS
 

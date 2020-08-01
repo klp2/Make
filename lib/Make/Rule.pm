@@ -4,6 +4,9 @@ use strict;
 use warnings;
 use Carp;
 use Make::Rule::Vars;
+## no critic (ValuesAndExpressions::ProhibitConstantPragma)
+use constant DEBUG => $ENV{MAKE_DEBUG};
+## use critic
 
 our $VERSION = '1.2.0';
 
@@ -52,17 +55,17 @@ sub command {
         confess "commands $cmd are not an array reference" unless ( 'ARRAY' eq ref $cmd );
         if (@$cmd) {
             if ( @{ $self->{COMMAND} } ) {
-                warn "Command for " . $self->Name, " redefined";
-                print STDERR "Was:", join( "\n", @{ $self->{COMMAND} } ), "\n";
-                print STDERR "Now:", join( "\n", @$cmd ), "\n";
+                warn "Command for " . $self->Name, " redefined",
+                    "Was:", join( "\n", @{ $self->{COMMAND} } ), "\n",
+                    "Now:", join( "\n", @$cmd ), "\n";
             }
             $self->{COMMAND} = $cmd;
         }
         else {
             if ( @{ $self->{COMMAND} } ) {
-
-                # warn "Command for ".$self->Name," retained";
-                # print STDERR "Was:",join("\n",@{$self->{COMMAND}}),"\n";
+                DEBUG
+                    and warn "Command for " . $self->Name, " retained\n",
+                    "Was:", join( "\n", @{ $self->{COMMAND} } ), "\n";
             }
         }
     }

@@ -3,6 +3,9 @@ package Make::Rule::Vars;
 use strict;
 use warnings;
 use Carp;
+## no critic (ValuesAndExpressions::ProhibitConstantPragma)
+use constant DEBUG => $ENV{MAKE_DEBUG};
+## use critic
 
 our $VERSION = '1.2.0';
 my @KEYS = qw( @ * ^ ? < );
@@ -38,8 +41,7 @@ sub EXISTS {
 sub FETCH {
     my ( $self, $v ) = @_;
     my $rule = $$self;
-
-    # print STDERR "FETCH $_ for ",$rule->Name,"\n";
+    DEBUG and print STDERR "FETCH $v for ", $rule->Name, "\n";
     return $rule->Name if $v eq '@';
     return $rule->Base if $v eq '*';
     return join ' ', @{ $rule->depend } if $v eq '^';
