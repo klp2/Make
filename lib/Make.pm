@@ -5,7 +5,7 @@ use warnings;
 
 our $VERSION = '1.2.0';
 
-use Carp;
+use Carp qw(confess);
 use Config;
 use Cwd;
 use File::Spec;
@@ -222,6 +222,7 @@ sub evaluate_macro {
     my ( $key,               @args )             = @_;
     my ( $function_packages, $vars_search_list ) = @args;
     my $value;
+    return '' if !length $key;
     if ( $key =~ /^([\w._]+|\S)(?::(.*))?$/ ) {
         my ( $var, $subst ) = ( $1, $2 );
         foreach my $hash (@$vars_search_list) {
@@ -256,7 +257,7 @@ sub evaluate_macro {
 
 sub subsvars {
     my ( $remaining, $function_packages, $vars_search_list ) = @_;
-    croak("Trying to subsitute undef value") unless ( defined $remaining );
+    confess "Trying to expand undef value" unless defined $remaining;
     my $ret = '';
     my $found;
     while (1) {

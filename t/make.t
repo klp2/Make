@@ -121,4 +121,15 @@ is_deeply $got, ['other'] or diag explain $got;
 $got = $all_rule->auto_vars;
 is_deeply [ keys %$got ], [qw( @ * ^ ? < )] or diag explain $got;
 
+$m = Make->new;
+$m->parse( \sprintf <<'EOF', $tempfile );
+space = $() $()
+tempfile = %s
+all:
+	@echo "$(space)" >"$(tempfile)"
+EOF
+$m->Make('all');
+$contents = do { local $/; open my $fh, '<', $tempfile; <$fh> };
+is $contents, " \n";
+
 done_testing;
