@@ -5,7 +5,7 @@ use warnings;
 
 our $VERSION = '1.2.0';
 
-use Carp qw(confess);
+use Carp qw(confess croak);
 use Config;
 use Cwd;
 use File::Spec;
@@ -448,7 +448,7 @@ sub parse {
         unshift( @files, 'GNUmakefile' ) if ( $self->{GNU} );
         foreach my $name (@files) {
             if ( -r $name ) {
-                $self->{Makefile} = $name;
+                $file = $name;
                 last;
             }
         }
