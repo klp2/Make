@@ -108,6 +108,7 @@ sub dotrules {
     my $Dot    = delete $self->{Dot};
     foreach my $f (@suffix) {
         foreach my $t ( '', @suffix ) {
+            delete $self->{Depend}{ $f . $t };
             next unless my $r = delete $Dot->{ $f . $t };
             DEBUG and print STDERR "Build %$t : %$f\n";
             my $target   = $self->Target( '%' . $t );
@@ -411,6 +412,7 @@ sub parse_makefile {
 sub pseudos {
     my $self = shift;
     foreach my $key (qw(SUFFIXES PHONY PRECIOUS PARALLEL)) {
+        delete $self->{Depend}{ '.' . $key };
         my $t = delete $self->{Dot}{ '.' . $key };
         if ( defined $t ) {
             $self->{$key} = {};
