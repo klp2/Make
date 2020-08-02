@@ -78,16 +78,9 @@ sub recurse {
     my $info = $self->Info;
     my @results;
     foreach my $rule ( @{ $self->rules } ) {
-        foreach my $dep ( @{ $rule->depend } ) {
-            my $t = $info->Target($dep);
-            if ( defined $t ) {
-                push @results, $t->recurse($method);
-            }
-            elsif ( !$info->exists($dep) ) {
-                my $dir = cwd();
-                die "Cannot recurse $method - no target $dep in $dir";
-            }
-        }
+        ## no critic (BuiltinFunctions::RequireBlockMap)
+        push @results, map $info->Target($_)->recurse($method), @{ $rule->depend };
+        ## use critic
         push @results, $rule->$method($self);
     }
     return @results;
