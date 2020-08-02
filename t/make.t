@@ -120,6 +120,7 @@ my ($all_rule) = @{ $all_target->rules };
 $got = $all_rule->depend;
 is_deeply $got, ['other'] or diag explain $got;
 $got = $all_rule->auto_vars($all_target);
+ok exists $got->{'@'}, 'Rules.Vars.EXISTS';
 is_deeply [ keys %$got ], [qw( @ * ^ ? < )] or diag explain $got;
 
 $m = Make->new;
