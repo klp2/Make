@@ -130,7 +130,8 @@ all: ; @echo "$(space)" >"$(tempfile)"
 .PHONY: all
 EOF
 ok $m->phony('all'), 'all is phony';
-$m->Make('all');
+is $m->Target('a.x.o')->Base, 'a.x';
+$m->Make;
 $contents = do { local $/; open my $fh, '<', $tempfile; <$fh> };
 is $contents, " \n";
 
