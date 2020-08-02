@@ -518,15 +518,11 @@ sub apply {
     my ( $vars, $targets ) = parse_args(@args);
     $self->set_var(@$_) for @$vars;
     $targets = [ $self->{Vars}{'.DEFAULT_GOAL'} ] unless @$targets;
-    my @results;
-    foreach (@$targets) {
-        my $t = $self->Target($_);
-        unless ( defined $t ) {
-            die join( ' ', $method, @args ), "\n", "Cannot '$method' - no target $_";
-        }
-        push @results, $t->recurse($method);
-    }
-    return @results;
+    ## no critic (BuiltinFunctions::RequireBlockGrep BuiltinFunctions::RequireBlockMap)
+    my @bad_targets = grep !$self->{Depend}{$_}, @$targets;
+    die "Cannot '$method' (@args) - no target @bad_targets" if @bad_targets;
+    return map $self->Target($_)->recurse($method), @$targets;
+    ## use critic
 }
 
 # Spew a shell script to perfom the 'make' e.g. make -n
