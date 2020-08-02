@@ -45,10 +45,6 @@ sub suffixes {
     ## use critic
 }
 
-#
-# Construct a new 'target' (or find old one)
-# - used by parser to add to data structures
-#
 sub target {
     my ( $self, $target ) = @_;
     unless ( exists $self->{Depend}{$target} ) {
@@ -64,6 +60,11 @@ sub target {
         }
     }
     return $self->{Depend}{$target};
+}
+
+sub get_target {
+    my ( $self, $target ) = @_;
+    return exists $self->{Depend}{$target};
 }
 
 #
@@ -675,6 +676,14 @@ recursively-expanded (the default).
 =head2 expand
 
 Uses L</subsvars> to return its only arg with any macros expanded.
+
+=head2 target
+
+Find or create L<Make::Target> for given target-name.
+
+=head2 get_target
+
+Find L<Make::Target> for given target-name, or undef.
 
 =head1 ATTRIBUTES
 

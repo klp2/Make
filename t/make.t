@@ -111,6 +111,8 @@ other: Changes README
 EOF
 ok !$m->target('all')->has_recipe, 'all has no recipe';
 ok $m->target('other')->has_recipe, 'other has recipe';
+ok !$m->get_target('not_there'), 'get_target';
+ok $m->get_target('all'), 'get_target existing';
 $m->Make('all');
 my $contents = do { local $/; open my $fh, '<', $tempfile; <$fh> };
 is $contents, "other Changes README Changes value\n";
