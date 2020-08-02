@@ -138,21 +138,6 @@ sub date {
 }
 
 #
-# Check to see if name is a target we can make or an existing
-# file - used to see if pattern rules are valid
-# - Needs extending to do vpath lookups
-#
-## no critic (Subroutines::ProhibitBuiltinHomonyms)
-sub exists {
-## use critic
-    my ( $self, $name ) = @_;
-    return 1 if ( exists $self->{Depend}{$name} );
-    return 1 if defined $self->date($name);
-    DEBUG and print STDERR "'$name' does not exist\n";
-    return 0;
-}
-
-#
 # See if we can find a %.o : %.c rule for target
 # .c.o rules are already converted to this form
 #
@@ -482,6 +467,7 @@ sub parse_cmdline {
     return \%parsed;
 }
 
+## no critic (Subroutines::ProhibitBuiltinHomonyms)
 sub exec {
     my ( $self, $line ) = @_;
     undef %date;
@@ -495,6 +481,7 @@ sub exec {
     }
     return;
 }
+## use critic
 
 ## no critic (Subroutines::RequireFinalReturn)
 sub NextPass { shift->{Pass}++ }
