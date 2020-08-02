@@ -109,6 +109,8 @@ all: $(targets)
 other: Changes README
 	@echo $@ $^ $< $(var) >"$(tempfile)"
 EOF
+ok !$m->Target('all')->has_recipe, 'all has no recipe';
+ok $m->Target('other')->has_recipe, 'other has recipe';
 $m->Make('all');
 my $contents = do { local $/; open my $fh, '<', $tempfile; <$fh> };
 is $contents, "other Changes README Changes value\n";

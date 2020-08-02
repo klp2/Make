@@ -11,11 +11,12 @@ our $VERSION = '1.2.0';
 sub new {
     my ( $class, $name, $info ) = @_;
     return bless {
-        NAME      => $name,    # name of thing
-        MAKEFILE  => $info,    # Makefile context
-        RULES     => [],
-        RULE_TYPE => undef,    # undef, :, ::
-        Pass      => 0,        # Used to determine if 'done' this sweep
+        NAME       => $name,    # name of thing
+        MAKEFILE   => $info,    # Makefile context
+        RULES      => [],
+        RULE_TYPE  => undef,    # undef, :, ::
+        HAS_RECIPE => undef,    # undef, boolean
+        Pass       => 0,        # Used to determine if 'done' this sweep
     }, $class;
 }
 
@@ -30,6 +31,14 @@ sub phony {
     return $self->Info->phony( $self->Name );
 }
 
+sub has_recipe {
+    my ($self) = @_;
+    return $self->{HAS_RECIPE} if defined $self->{HAS_RECIPE};
+    ## no critic (BuiltinFunctions::RequireBlockGrep)
+    return $self->{HAS_RECIPE} = grep @{ $_->recipe }, @{ $self->rules };
+    ## use critic
+}
+
 sub rules {
     return shift->{RULES};
 }
@@ -40,6 +49,7 @@ sub add_rule {
     my $kind     = $self->{RULE_TYPE} ||= $new_kind;
     die "Target '$self->{NAME}' had '$kind' but tried to add '$new_kind'"
         if $kind ne $new_kind;
+    $self->{HAS_RECIPE} ||= undef;    # reset if was no or unknown
     return push @{ shift->{RULES} }, $rule;
 }
 
