@@ -5,15 +5,9 @@ use warnings;
 
 our $VERSION = '1.2.0';
 
-use Carp;
-use Cwd;
-use Make::Rule;
-
-#
 # Intermediate 'target' package
 # There is an instance of this for each 'target' that apears on
 # the left hand side of a rule i.e. for each thing that can be made.
-#
 sub new {
     my ( $class, $name, $info ) = @_;
     return bless {
