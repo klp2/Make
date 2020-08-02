@@ -127,7 +127,9 @@ $m->parse( \sprintf <<'EOF', $tempfile );
 space = $() $()
 tempfile = %s
 all: ; @echo "$(space)" >"$(tempfile)"
+.PHONY: all
 EOF
+ok $m->phony('all'), 'all is phony';
 $m->Make('all');
 $contents = do { local $/; open my $fh, '<', $tempfile; <$fh> };
 is $contents, " \n";
