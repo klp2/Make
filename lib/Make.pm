@@ -350,6 +350,9 @@ sub process_ast_bit {
         my ( $targets, $kind, $prereqs, $cmnds ) = @args;
         ($prereqs) = tokenize( $self->expand($prereqs) );
         ($targets) = tokenize( $self->expand($targets) );
+        unless ( @$targets == 1 and $targets->[0] =~ /^\.[A-Z]/ ) {
+            $self->target($_) for @$prereqs;    # so "exist or can be made"
+        }
         my $rule = Make::Rule->new( $kind, $prereqs, $cmnds );
         $self->target($_)->add_rule($rule) for @$targets;
     }
