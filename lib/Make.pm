@@ -117,7 +117,7 @@ sub dotrules {
                 if @dotrules != 1;
             my $thisrule = $dotrules[0];
             die "Failed on pattern rule for '$f$t', no prereqs allowed"
-                if @{ $thisrule->depend };
+                if @{ $thisrule->prereqs };
             my $rule = Make::Rule->new( '::', [ '%' . $f ], $thisrule->recipe );
             $self->Target( '%' . $t )->add_rule($rule);
         }
@@ -163,7 +163,7 @@ sub patrule {
         if ( defined( $Pat = patmatch( $key, $target ) ) ) {
             my $t = $self->{Pattern}{$key};
             foreach my $rule ( @{ $t->rules } ) {
-                if ( my @dep = @{ $rule->depend } ) {
+                if ( my @dep = @{ $rule->prereqs } ) {
                     my $dep = $dep[0];
                     $dep =~ s/%/$Pat/g;
                     DEBUG and print STDERR "Try $target : $dep\n";
@@ -187,8 +187,8 @@ sub needs {
     my ( $self, $target ) = @_;
     unless ( $self->{Done}{$target} ) {
         if ( exists $self->{Depend}{$target} ) {
-            my @depend = tokenize( $self->expand( $self->{Depend}{$target} ) );
-            foreach (@depend) {
+            my @prereqs = tokenize( $self->expand( $self->{Depend}{$target} ) );
+            foreach (@prereqs) {
                 $self->needs($_);
             }
         }
@@ -346,10 +346,10 @@ sub process_ast_bit {
         $self->{Vpath}{ $args[0] } = $args[1];
     }
     elsif ( $type eq 'rule' ) {
-        my ( $targets, $kind, $depends, $cmnds ) = @args;
-        ($depends) = tokenize( $self->expand($depends) );
+        my ( $targets, $kind, $prereqs, $cmnds ) = @args;
+        ($prereqs) = tokenize( $self->expand($prereqs) );
         ($targets) = tokenize( $self->expand($targets) );
-        my $rule = Make::Rule->new( $kind, $depends, $cmnds );
+        my $rule = Make::Rule->new( $kind, $prereqs, $cmnds );
         $self->Target($_)->add_rule($rule) for @$targets;
     }
     return;
@@ -381,10 +381,10 @@ sub parse_makefile {
             push @ast, [ 'vpath', $1, $2 ];
         }
         elsif (/^\s*([^:]*)(::?)\s*(.*)$/) {
-            my ( $target, $kind, $depend ) = ( $1, $2, $3 );
+            my ( $target, $kind, $prereqs ) = ( $1, $2, $3 );
             my @cmnds;
-            if ( $depend =~ /^([^;]*);(.*)$/ ) {
-                ( $depend, $cmnds[0] ) = ( $1, $2 );
+            if ( $prereqs =~ /^([^;]*);(.*)$/ ) {
+                ( $prereqs, $cmnds[0] ) = ( $1, $2 );
             }
             while ( defined( $_ = get_full_line($fh) ) ) {
                 next if (/^\s*#/);
@@ -395,7 +395,7 @@ sub parse_makefile {
                 push( @cmnds, $_ );
             }
             $was_rule = 1;
-            push @ast, [ 'rule', $target, $kind, $depend, \@cmnds ];
+            push @ast, [ 'rule', $target, $kind, $prereqs, \@cmnds ];
         }
         else {
             warn "Ignore '$_'\n";
@@ -416,7 +416,7 @@ sub pseudos {
         if ( defined $t ) {
             $self->{$key} = {};
             ## no critic (BuiltinFunctions::RequireBlockMap)
-            foreach my $dep ( map @{ $_->depend }, @{ $t->rules } ) {
+            foreach my $dep ( map @{ $_->prereqs }, @{ $t->rules } ) {
                 ## use critic
                 $self->{$key}{$dep} = 1;
             }
@@ -595,11 +595,11 @@ Make - Pure-Perl implementation of a somewhat GNU-like make.
     $make->Print(@ARGV);
 
     my $targ = $make->Target($name);
-    my $rule = Make::Rule->new(':', \@depends, \@recipe);
+    my $rule = Make::Rule->new(':', \@prereqs, \@recipe);
     $targ->add_rule($rule);
     my @rules = @{ $targ->rules };
 
-    my @depends  = @{ $rule->depend };
+    my @prereqs  = @{ $rule->prereqs };
     my @commands = @{ $rule->recipe };
 
 =head1 DESCRIPTION
@@ -620,9 +620,7 @@ Makefiles...
 =head1 METHODS
 
 There are other methods (used by parse) which can be used to add and
-manipulate targets and their dependants. There is a hierarchy of classes
-which is still evolving. These classes and their methods will be documented when
-they are a little more stable.
+manipulate targets and their prerequites.
 
 =head2 new
 

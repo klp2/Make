@@ -117,7 +117,7 @@ my $got = $other_rule->recipe;
 is_deeply $got, ['@echo $@ $^ $< $(var) >"$(tempfile)"'] or diag explain $got;
 my $all_target = $m->Target('all');
 my ($all_rule) = @{ $all_target->rules };
-$got = $all_rule->depend;
+$got = $all_rule->prereqs;
 is_deeply $got, ['other'] or diag explain $got;
 $got = $all_rule->auto_vars($all_target);
 ok exists $got->{'@'}, 'Rules.Vars.EXISTS';

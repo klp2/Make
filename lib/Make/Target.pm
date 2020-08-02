@@ -73,7 +73,7 @@ sub recurse {
     my @results;
     foreach my $rule ( @{ $self->rules } ) {
         ## no critic (BuiltinFunctions::RequireBlockMap)
-        push @results, map $info->Target($_)->recurse($method), @{ $rule->depend };
+        push @results, map $info->Target($_)->recurse($method), @{ $rule->prereqs };
         ## use critic
         push @results, $rule->$method($self);
     }

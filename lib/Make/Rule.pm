@@ -10,8 +10,8 @@ use constant DEBUG => $ENV{MAKE_DEBUG};
 
 our $VERSION = '1.2.0';
 
-sub depend {
-    return shift->{DEPEND};
+sub prereqs {
+    return shift->{PREREQS};
 }
 
 sub recipe {
@@ -29,7 +29,7 @@ sub out_of_date {
     my @dep   = ();
     my $tdate = $target->date;
     my $count = 0;
-    foreach my $dep ( @{ $self->depend } ) {
+    foreach my $dep ( @{ $self->prereqs } ) {
         my $date = $info->date($dep);
         $count++;
         if ( !defined($date) || !defined($tdate) || $date < $tdate ) {
@@ -41,7 +41,7 @@ sub out_of_date {
     }
     return @dep if wantarray;
 
-    # Note special case of no dependencies means it is always  out-of-date!
+    # Note special case of no prerequisites means it is always  out-of-date!
     return !$count;
 }
 
@@ -67,15 +67,15 @@ sub exp_recipe {
 }
 
 sub new {
-    my ( $class, $kind, $depend, $recipe ) = @_;
-    confess "dependents $depend are not an array reference"
-        if 'ARRAY' ne ref $depend;
+    my ( $class, $kind, $prereqs, $recipe ) = @_;
+    confess "prereqs $prereqs are not an array reference"
+        if 'ARRAY' ne ref $prereqs;
     confess "recipe $recipe not an array reference"
         if 'ARRAY' ne ref $recipe;
     return bless {
-        KIND   => $kind,      # : or ::
-        DEPEND => $depend,    # right hand args
-        RECIPE => $recipe,    # recipe
+        KIND    => $kind,       # : or ::
+        PREREQS => $prereqs,    # right hand args
+        RECIPE  => $recipe,     # recipe
     }, $class;
 }
 
@@ -90,12 +90,12 @@ sub kind {
 #
 sub find_commands {
     my ( $self, $target ) = @_;
-    if ( !@{ $self->{RECIPE} } && @{ $self->{DEPEND} } ) {
+    if ( !@{ $self->{RECIPE} } && @{ $self->{PREREQS} } ) {
         my $info = $target->Info;
-        my @dep  = $self->depend;
+        my @dep  = $self->prereqs;
         my @rule = $info->patrule( $target->Name );
         if (@rule) {
-            $self->depend( $rule[0] );
+            $self->prereqs( $rule[0] );
             $self->recipe( $rule[1] );
         }
     }
@@ -121,7 +121,7 @@ sub Print {
     my ( $self, $target ) = @_;
     my $file;
     print $target->Name, ' ', $self->{KIND}, ' ';
-    foreach my $file ( $self->depend ) {
+    foreach my $file ( $self->prereqs ) {
         print " \\\n   $file";
     }
     print "\n";
@@ -144,9 +144,9 @@ Make::Rule - a rule with prerequisites and recipe
 
 =head1 SYNOPSIS
 
-    my $rule = Make::Rule->new( $kind, \@depend, \@recipe );
+    my $rule = Make::Rule->new( $kind, \@prereqs, \@recipe );
     my @name_commands = $rule->Make($target);
-    my @deps = @{ $rule->depend };
+    my @deps = @{ $rule->prereqs };
     my @cmds = @{ $rule->recipe };
     my @expanded_cmds = @{ $rule->exp_recipe($target) }; # vars expanded
     my @ood = $rule->out_of_date($target);
@@ -155,7 +155,7 @@ Make::Rule - a rule with prerequisites and recipe
 =head1 DESCRIPTION
 
 Represents a rule. An instance exists for each ':' or '::' rule in
-the makefile. The recipe and dependancies are kept here.
+the makefile. The recipe and prerequisites are kept here.
 
 =cut
 
