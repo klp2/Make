@@ -60,7 +60,7 @@ sub Target {
             $self->{Dot}{$target} = $t;
         }
         else {
-            push( @{ $self->{Targets} }, $t );
+            $self->{Vars}{'.DEFAULT_GOAL'} ||= $target;
         }
     }
     return $self->{Depend}{$target};
@@ -122,7 +122,6 @@ sub dotrules {
             $self->Target( '%' . $t )->add_rule($rule);
         }
     }
-    push @{ $self->{Targets} }, @$Dot{ sort keys %$Dot };
     return;
 }
 
@@ -518,10 +517,7 @@ sub apply {
     $self->NextPass;
     my ( $vars, $targets ) = parse_args(@args);
     $self->set_var(@$_) for @$vars;
-    foreach my $t ( @{ $self->{'Targets'} } ) {
-        $_->find_commands($t) for @{ $t->rules };
-    }
-    @$targets = ( $self->{'Targets'}[0] )->Name unless (@$targets);
+    $targets = [ $self->{Vars}{'.DEFAULT_GOAL'} ] unless @$targets;
     my @results;
     foreach (@$targets) {
         my $t = $self->Target($_);
@@ -570,7 +566,6 @@ sub new {
         Vpath            => {},                      # vpath %.c info
         Vars             => {},                      # Variables defined in makefile
         Depend           => {},                      # hash of targets
-        Targets          => [],                      # ordered version so we can find 1st one
         Pass             => 0,                       # incremented each sweep
         Need             => {},
         Done             => {},
