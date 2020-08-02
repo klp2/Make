@@ -129,10 +129,13 @@ tempfile = %s
 all: ; @echo "$(space)" >"$(tempfile)"
 .PHONY: all
 EOF
-ok $m->phony('all'), 'all is phony';
+ok $m->Target('all')->phony,  'all is phony';
 is $m->Target('a.x.o')->Base, 'a.x';
 $m->Make;
 $contents = do { local $/; open my $fh, '<', $tempfile; <$fh> };
 is $contents, " \n";
+
+$got = [ Make::parse_args(qw(all VAR=value)) ];
+is_deeply $got, [ [ [qw(VAR value)] ], ['all'] ] or diag explain $got;
 
 done_testing;
