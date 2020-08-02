@@ -109,15 +109,15 @@ all: $(targets)
 other: Changes README
 	@echo $@ $^ $< $(var) >"$(tempfile)"
 EOF
-ok !$m->Target('all')->has_recipe, 'all has no recipe';
-ok $m->Target('other')->has_recipe, 'other has recipe';
+ok !$m->target('all')->has_recipe, 'all has no recipe';
+ok $m->target('other')->has_recipe, 'other has recipe';
 $m->Make('all');
 my $contents = do { local $/; open my $fh, '<', $tempfile; <$fh> };
 is $contents, "other Changes README Changes value\n";
-my ($other_rule) = @{ $m->Target('other')->rules };
+my ($other_rule) = @{ $m->target('other')->rules };
 my $got = $other_rule->recipe;
 is_deeply $got, ['@echo $@ $^ $< $(var) >"$(tempfile)"'] or diag explain $got;
-my $all_target = $m->Target('all');
+my $all_target = $m->target('all');
 my ($all_rule) = @{ $all_target->rules };
 $got = $all_rule->prereqs;
 is_deeply $got, ['other'] or diag explain $got;
@@ -132,8 +132,8 @@ tempfile = %s
 all: ; @echo "$(space)" >"$(tempfile)"
 .PHONY: all
 EOF
-ok $m->Target('all')->phony,  'all is phony';
-is $m->Target('a.x.o')->Base, 'a.x';
+ok $m->target('all')->phony,  'all is phony';
+is $m->target('a.x.o')->Base, 'a.x';
 $m->Make;
 $contents = do { local $/; open my $fh, '<', $tempfile; <$fh> };
 is $contents, " \n";

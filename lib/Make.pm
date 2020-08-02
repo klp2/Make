@@ -49,7 +49,7 @@ sub suffixes {
 # Construct a new 'target' (or find old one)
 # - used by parser to add to data structures
 #
-sub Target {
+sub target {
     my ( $self, $target ) = @_;
     unless ( exists $self->{Depend}{$target} ) {
         my $t = $self->{Depend}{$target} = Make::Target->new( $target, $self );
@@ -111,7 +111,7 @@ sub dotrules {
             delete $self->{Depend}{ $f . $t };
             next unless my $r = delete $Dot->{ $f . $t };
             DEBUG and print STDERR "Build %$t : %$f\n";
-            my $target   = $self->Target( '%' . $t );
+            my $target   = $self->target( '%' . $t );
             my @dotrules = @{ $r->rules };
             die "Failed on pattern rule for '$f$t', too many rules"
                 if @dotrules != 1;
@@ -119,7 +119,7 @@ sub dotrules {
             die "Failed on pattern rule for '$f$t', no prereqs allowed"
                 if @{ $thisrule->prereqs };
             my $rule = Make::Rule->new( '::', [ '%' . $f ], $thisrule->recipe );
-            $self->Target( '%' . $t )->add_rule($rule);
+            $self->target( '%' . $t )->add_rule($rule);
         }
     }
     return;
@@ -350,7 +350,7 @@ sub process_ast_bit {
         ($prereqs) = tokenize( $self->expand($prereqs) );
         ($targets) = tokenize( $self->expand($targets) );
         my $rule = Make::Rule->new( $kind, $prereqs, $cmnds );
-        $self->Target($_)->add_rule($rule) for @$targets;
+        $self->target($_)->add_rule($rule) for @$targets;
     }
     return;
 }
@@ -521,7 +521,7 @@ sub apply {
     ## no critic (BuiltinFunctions::RequireBlockGrep BuiltinFunctions::RequireBlockMap)
     my @bad_targets = grep !$self->{Depend}{$_}, @$targets;
     die "Cannot '$method' (@args) - no target @bad_targets" if @bad_targets;
-    return map $self->Target($_)->recurse($method), @$targets;
+    return map $self->target($_)->recurse($method), @$targets;
     ## use critic
 }
 
@@ -594,7 +594,7 @@ Make - Pure-Perl implementation of a somewhat GNU-like make.
     # to see an expanded version of the makefile
     $make->Print(@ARGV);
 
-    my $targ = $make->Target($name);
+    my $targ = $make->target($name);
     my $rule = Make::Rule->new(':', \@prereqs, \@recipe);
     $targ->add_rule($rule);
     my @rules = @{ $targ->rules };
