@@ -118,7 +118,7 @@ sub dotrules {
             my $thisrule = $dotrules[0];
             die "Failed on pattern rule for '$f$t', no prereqs allowed"
                 if @{ $thisrule->depend };
-            my $rule = Make::Rule->new( '::', [ '%' . $f ], $thisrule->command );
+            my $rule = Make::Rule->new( '::', [ '%' . $f ], $thisrule->recipe );
             $self->Target( '%' . $t )->add_rule($rule);
         }
     }
@@ -171,7 +171,7 @@ sub patrule {
                         foreach (@dep) {
                             s/%/$Pat/g;
                         }
-                        return ( \@dep, $rule->command );
+                        return ( \@dep, $rule->recipe );
                     }
                 }
             }
@@ -595,12 +595,12 @@ Make - Pure-Perl implementation of a somewhat GNU-like make.
     $make->Print(@ARGV);
 
     my $targ = $make->Target($name);
-    my $rule = Make::Rule->new(':', \@depends, \@command);
+    my $rule = Make::Rule->new(':', \@depends, \@recipe);
     $targ->add_rule($rule);
     my @rules = @{ $targ->rules };
 
     my @depends  = @{ $rule->depend };
-    my @commands = @{ $rule->command };
+    my @commands = @{ $rule->recipe };
 
 =head1 DESCRIPTION
 

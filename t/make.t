@@ -113,7 +113,7 @@ $m->Make('all');
 my $contents = do { local $/; open my $fh, '<', $tempfile; <$fh> };
 is $contents, "other Changes README Changes value\n";
 my ($other_rule) = @{ $m->Target('other')->rules };
-my $got = $other_rule->command;
+my $got = $other_rule->recipe;
 is_deeply $got, ['@echo $@ $^ $< $(var) >"$(tempfile)"'] or diag explain $got;
 my $all_target = $m->Target('all');
 my ($all_rule) = @{ $all_target->rules };

@@ -10,16 +10,12 @@ use constant DEBUG => $ENV{MAKE_DEBUG};
 
 our $VERSION = '1.2.0';
 
-# Bottom level 'rule' package
-# An instance exists for each ':' or '::' rule in the makefile.
-# The commands and dependancies are kept here.
-
 sub depend {
     return shift->{DEPEND};
 }
 
-sub command {
-    return shift->{COMMAND};
+sub recipe {
+    return shift->{RECIPE};
 }
 
 #
@@ -60,26 +56,26 @@ sub auto_vars {
 # Return commands to apply rule with variables expanded
 # - May need vpath processing
 #
-sub exp_command {
+sub exp_recipe {
     my ( $self, $target ) = @_;
     my $info      = $target->Info;
     my @subs_args = ( $info->function_packages, [ $self->auto_vars($target), $info->vars, \%ENV ] );
     ## no critic (BuiltinFunctions::RequireBlockMap)
-    my @cmd = map Make::subsvars( $_, @subs_args ), @{ $self->command };
+    my @cmd = map Make::subsvars( $_, @subs_args ), @{ $self->recipe };
     ## use critic
     return (wantarray) ? @cmd : \@cmd;
 }
 
 sub new {
-    my ( $class, $kind, $depend, $command ) = @_;
+    my ( $class, $kind, $depend, $recipe ) = @_;
     confess "dependents $depend are not an array reference"
         if 'ARRAY' ne ref $depend;
-    confess "commands $command are not an array reference"
-        if 'ARRAY' ne ref $command;
+    confess "recipe $recipe not an array reference"
+        if 'ARRAY' ne ref $recipe;
     return bless {
-        KIND    => $kind,       # : or ::
-        DEPEND  => $depend,     # right hand args
-        COMMAND => $command,    # commands
+        KIND   => $kind,      # : or ::
+        DEPEND => $depend,    # right hand args
+        RECIPE => $recipe,    # recipe
     }, $class;
 }
 
@@ -94,13 +90,13 @@ sub kind {
 #
 sub find_commands {
     my ( $self, $target ) = @_;
-    if ( !@{ $self->{COMMAND} } && @{ $self->{DEPEND} } ) {
+    if ( !@{ $self->{RECIPE} } && @{ $self->{DEPEND} } ) {
         my $info = $target->Info;
         my @dep  = $self->depend;
         my @rule = $info->patrule( $target->Name );
         if (@rule) {
             $self->depend( $rule[0] );
-            $self->command( $rule[1] );
+            $self->recipe( $rule[1] );
         }
     }
     return;
@@ -112,7 +108,7 @@ sub find_commands {
 sub Make {
     my ( $self, $target ) = @_;
     return unless ( $self->out_of_date($target) );
-    return [ $target->Name, $self->exp_command($target) ];
+    return [ $target->Name, $self->exp_recipe($target) ];
 }
 
 #
@@ -129,14 +125,14 @@ sub Print {
         print " \\\n   $file";
     }
     print "\n";
-    my @cmd = $self->exp_command($target);
+    my @cmd = $self->exp_recipe($target);
     if (@cmd) {
         foreach my $file (@cmd) {
             print "\t", $file, "\n";
         }
     }
     else {
-        print STDERR "No commands for ", $target->Name, "\n" unless ( $self->target->phony );
+        print STDERR "No recipe for ", $target->Name, "\n" unless ( $self->target->phony );
     }
     print "\n";
     return;
@@ -148,17 +144,18 @@ Make::Rule - a rule with prerequisites and recipe
 
 =head1 SYNOPSIS
 
-    my $rule = Make::Rule->new( $kind, \@depend, \@command );
+    my $rule = Make::Rule->new( $kind, \@depend, \@recipe );
     my @name_commands = $rule->Make($target);
     my @deps = @{ $rule->depend };
-    my @cmds = @{ $rule->command };
-    my @expanded_cmds = @{ $rule->exp_command($target) }; # vars expanded
+    my @cmds = @{ $rule->recipe };
+    my @expanded_cmds = @{ $rule->exp_recipe($target) }; # vars expanded
     my @ood = $rule->out_of_date($target);
     my $vars = $rule->auto_vars($target); # tied hash-ref
 
 =head1 DESCRIPTION
 
-Represents a rule.
+Represents a rule. An instance exists for each ':' or '::' rule in
+the makefile. The recipe and dependancies are kept here.
 
 =cut
 
