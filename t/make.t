@@ -91,8 +91,8 @@ for my $l (@CMDs) {
     is_deeply $got, $expected;
 }
 
-my $m = Make->new( Makefile => "Makefile" );
-$m->parse("Makefile");
+my $m = Make->new;
+$m->parse;
 is ref($m), 'Make';
 eval { $m->Make('all') };
 is $@, '',;
