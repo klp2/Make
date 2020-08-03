@@ -14,7 +14,7 @@ for my $l (@LINES) {
 
 my @ASTs = (
     [
-        "\n.SUFFIXES: .o .c .y .h .sh .cps\n\n.c.o :\n\t\$(CC) \$(CFLAGS) \$(CPPFLAGS) -c -o \$@ \$<\n\n",
+        "\n.SUFFIXES: .o .c .y .h .sh .cps # comment\n\n.c.o :\n\t\$(CC) \$(CFLAGS) \$(CPPFLAGS) -c -o \$@ \$<\n\n",
         [
             [ 'rule', '.SUFFIXES', ':', '.o .c .y .h .sh .cps', [] ],
             [ 'rule', '.c.o ',     ':', '',                     ['$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<'] ],

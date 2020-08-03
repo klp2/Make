@@ -375,6 +375,7 @@ sub parse_makefile {
             if ( $prereqs =~ /^([^;]*);(.*)$/ ) {
                 ( $prereqs, $cmnds[0] ) = ( $1, $2 );
             }
+            $prereqs =~ s/\s*#.*//;
             while ( defined( $_ = get_full_line($fh) ) ) {
                 next if (/^\s*#/);
                 next if (/^\s*$/);
