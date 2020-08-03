@@ -18,11 +18,9 @@ sub recipe {
     return shift->{RECIPE};
 }
 
-#
 # The key make test - is target out-of-date as far as this rule is concerned
 # In scalar context - boolean value of 'do we need to apply the rule'
 # In list context the things we are out-of-date with e.g. magic $? variable
-#
 sub out_of_date {
     my ( $self, $target ) = @_;
     my $info  = $target->Info;
@@ -52,10 +50,7 @@ sub auto_vars {
     return \%var;
 }
 
-#
-# Return commands to apply rule with variables expanded
 # - May need vpath processing
-#
 sub exp_recipe {
     my ( $self, $target ) = @_;
     my $info      = $target->Info;
@@ -83,28 +78,6 @@ sub kind {
     return shift->{KIND};
 }
 
-#
-# This code has to go somewhere but no good home obvious yet.
-#  - only applies to ':' rules, but needs top level database
-#  - perhaps in ->commands of derived ':' class?
-#
-sub find_commands {
-    my ( $self, $target ) = @_;
-    if ( !@{ $self->{RECIPE} } && @{ $self->{PREREQS} } ) {
-        my $info = $target->Info;
-        my @dep  = $self->prereqs;
-        my @rule = $info->patrule( $target->Name );
-        if (@rule) {
-            $self->prereqs( $rule[0] );
-            $self->recipe( $rule[1] );
-        }
-    }
-    return;
-}
-
-#
-# Normal 'make' method
-#
 sub Make {
     my ( $self, $target ) = @_;
     return unless ( $self->out_of_date($target) );

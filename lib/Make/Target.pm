@@ -2,6 +2,9 @@ package Make::Target;
 
 use strict;
 use warnings;
+## no critic (ValuesAndExpressions::ProhibitConstantPragma)
+use constant DEBUG => $ENV{MAKE_DEBUG};
+## use critic
 
 our $VERSION = '1.2.0';
 
@@ -81,6 +84,12 @@ sub recurse {
     return if $self->done;
     my $info = $self->Info;
     my @results;
+    DEBUG and print STDERR "Build " . $self->Name, "\n";
+    if ( !$self->phony && !$self->has_recipe ) {
+        my $rule = $info->patrule( $self->Name, $self->{RULE_TYPE} || ':' );
+        DEBUG and print STDERR "Implicit rule (", $self->Name, "): @{ $rule ? $rule->prereqs : ['none'] }\n";
+        $self->add_rule($rule) if $rule;
+    }
     foreach my $rule ( @{ $self->rules } ) {
         ## no critic (BuiltinFunctions::RequireBlockMap)
         push @results, map $info->target($_)->recurse($method), @{ $rule->prereqs };

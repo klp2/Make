@@ -143,4 +143,24 @@ is $contents, " \n";
 $got = [ Make::parse_args(qw(all VAR=value)) ];
 is_deeply $got, [ [ [qw(VAR value)] ], ['all'] ] or diag explain $got;
 
+truncate $tempfile, 0;
+$m = Make->new;
+$m->parse( \sprintf <<'EOF', $tempfile );
+objs = a.o b.o
+tempfile = %s
+CC = @echo COMPILE >>"$(tempfile)"
+CFLAGS =
+all: $(objs)
+.PHONY: all
+a.o : a.c # these are so [ab].c "can be made" so implicit rule matches
+b.o : b.c
+EOF
+$got = $m->target('all')->rules->[0]->prereqs;
+is_deeply $got, [qw(a.o b.o)] or diag explain $got;
+$got = $m->target('a.o')->rules->[0]->prereqs;
+is_deeply $got, ['a.c'] or diag explain $got;
+$m->Make('all');
+$contents = do { local $/; open my $fh, '<', $tempfile; <$fh> };
+is $contents, "COMPILE -c -o a.o a.c\nCOMPILE -c -o b.o b.c\n";
+
 done_testing;

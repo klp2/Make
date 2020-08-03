@@ -67,16 +67,18 @@ sub get_target {
     return exists $self->{Depend}{$target};
 }
 
-#
 # Utility routine for patching %.o type 'patterns'
-#
+my %pattern_cache;
+
 sub patmatch {
-    my $key = shift;
-    local $_ = shift;
-    my $pat = $key;
-    $pat =~ s/\./\\./;
-    $pat =~ s/%/(\[^\/\]*)/;
-    if (/$pat$/) {
+    my ( $pat, $target ) = @_;
+    return $target if $pat eq '%';
+    ## no critic (BuiltinFunctions::RequireBlockMap)
+    $pattern_cache{$pat} = join '(.*)', map quotemeta, split /%/, $pat
+        if !exists $pattern_cache{$pat};
+    ## use critic
+    $pat = $pattern_cache{$pat};
+    if ( $target =~ /$pat/ ) {
         return $1;
     }
     return;
@@ -111,7 +113,7 @@ sub dotrules {
         foreach my $t ( '', @suffix ) {
             delete $self->{Depend}{ $f . $t };
             next unless my $r = delete $Dot->{ $f . $t };
-            DEBUG and print STDERR "Build %$t : %$f\n";
+            DEBUG and print STDERR "Pattern %$t : %$f\n";
             my $target   = $self->target( '%' . $t );
             my @dotrules = @{ $r->rules };
             die "Failed on pattern rule for '$f$t', too many rules"
@@ -142,28 +144,27 @@ sub date {
 # .c.o rules are already converted to this form
 #
 sub patrule {
-    my ( $self, $target ) = @_;
+    my ( $self, $target, $kind ) = @_;
     DEBUG and print STDERR "Trying pattern for $target\n";
     foreach my $key ( sort keys %{ $self->{Pattern} } ) {
-        my $Pat;
-        if ( defined( $Pat = patmatch( $key, $target ) ) ) {
-            my $t = $self->{Pattern}{$key};
-            foreach my $rule ( @{ $t->rules } ) {
-                if ( my @dep = @{ $rule->prereqs } ) {
-                    my $dep = $dep[0];
-                    $dep =~ s/%/$Pat/g;
-                    DEBUG and print STDERR "Try $target : $dep\n";
-                    if ( $self->exists($dep) ) {
-                        foreach (@dep) {
-                            s/%/$Pat/g;
-                        }
-                        return ( \@dep, $rule->recipe );
-                    }
-                }
-            }
+        DEBUG and print STDERR " Pattern $key trying\n";
+        next unless defined( my $Pat = patmatch( $key, $target ) );
+        DEBUG and print STDERR " Pattern $key matched ($Pat)\n";
+        my $t = $self->{Pattern}{$key};
+        foreach my $rule ( @{ $t->rules } ) {
+            my @dep = @{ $rule->prereqs };
+            DEBUG and print STDERR "  Try rule : @dep\n";
+            next unless @dep;
+            s/%/$Pat/g for @dep;
+            ## no critic (BuiltinFunctions::RequireBlockGrep)
+            my @failed = grep !( $self->date($_) or $self->get_target($_) ), @dep;
+            ## use critic
+            DEBUG and print STDERR "  Failed: (@failed)\n";
+            next if @failed;
+            return Make::Rule->new( $kind, \@dep, $rule->recipe );
         }
     }
-    return ();
+    return;
 }
 
 #
@@ -675,6 +676,14 @@ Find or create L<Make::Target> for given target-name.
 =head2 get_target
 
 Find L<Make::Target> for given target-name, or undef.
+
+=head2 patrule
+
+Search registered pattern-rules for one matching given
+target-name. Returns a L<Make::Rule> for that of the given kind, or false.
+
+Uses GNU make's "exists or can be made" algorithm on each rule's proposed
+requisite to see if that rule matches.
 
 =head1 ATTRIBUTES
 
