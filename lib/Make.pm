@@ -749,6 +749,10 @@ seems a little odd.
 
 L<pure-perl-make>
 
+L<https://pubs.opengroup.org/onlinepubs/9699919799/utilities/make.html> POSIX standard for make
+
+L<https://www.gnu.org/software/make/manual/make.html> GNU make docs
+
 =head1 AUTHOR
 
 Nick Ing-Simmons
