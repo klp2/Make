@@ -20,6 +20,13 @@ require Make::Functions;
 
 my $DEFAULTS_AST;
 my %date;
+my %fs_function_map = (
+    glob          => sub { glob $_[0] },
+    fh_open       => sub { open my $fh, $_[0], $_[1] or die "open @_: $!"; $fh },
+    fh_write      => sub { my $fh = shift; print {$fh} @_ },
+    file_readable => sub { -r $_[0] },
+    mtime         => sub { ( stat $_[0] )[9] },
+);
 
 ## no critic (Subroutines::RequireArgUnpacking Subroutines::RequireFinalReturn)
 sub load_modules {
@@ -89,12 +96,13 @@ sub patmatch {
 sub locate {
     my $self = shift;
     local $_ = shift;
-    return $_ if ( -r $_ );
+    my $readable = $self->fsmap->{file_readable};
+    return $_ if $readable->($_);
     foreach my $key ( sort keys %{ $self->{vpath} } ) {
         my $Pat;
         if ( defined( $Pat = patmatch( $key, $_ ) ) ) {
             foreach my $dir ( split( /:/, $self->{vpath}{$key} ) ) {
-                return "$dir/$_" if ( -r "$dir/$_" );
+                return "$dir/$_" if $readable->("$dir/$_");
             }
         }
     }
@@ -133,7 +141,7 @@ sub dotrules {
 sub date {
     my ( $self, $name ) = @_;
     unless ( exists $date{$name} ) {
-        $date{$name} = ( stat $name )[9];
+        $date{$name} = $self->fsmap->{mtime}->($name);
     }
     return $date{$name};
 }
@@ -192,8 +200,8 @@ sub needs {
 }
 
 sub evaluate_macro {
-    my ( $key,               @args )             = @_;
-    my ( $function_packages, $vars_search_list ) = @args;
+    my ( $key, @args ) = @_;
+    my ( $function_packages, $vars_search_list, $fsmap ) = @args;
     my $value;
     return '' if !length $key;
     if ( $key =~ /^([\w._]+|\S)(?::(.*))?$/ ) {
@@ -205,7 +213,7 @@ sub evaluate_macro {
         if ( defined $subst ) {
             my @parts = split /=/, $subst, 2;
             die "Syntax error: expected form x=y in '$subst'" if @parts != 2;
-            $value = join ' ', Make::Functions::patsubst( @parts, $value );
+            $value = join ' ', Make::Functions::patsubst( $fsmap, @parts, $value );
         }
     }
     elsif ( $key =~ /([\w._]+)\s+(.*)$/ ) {
@@ -216,7 +224,7 @@ sub evaluate_macro {
         }
         die "'$func' not found in (@$function_packages)" if !defined $code;
         ## no critic (BuiltinFunctions::RequireBlockMap)
-        $value = join ' ', $code->( map subsvars( $_, $function_packages, $vars_search_list ), split /\s*,\s*/, $args );
+        $value = join ' ', $code->( $fsmap, map subsvars( $_, @args ), split /\s*,\s*/, $args );
         ## use critic
     }
     elsif ( $key =~ /^\S*\$/ ) {
@@ -229,7 +237,7 @@ sub evaluate_macro {
 }
 
 sub subsvars {
-    my ( $remaining, $function_packages, $vars_search_list ) = @_;
+    my ( $remaining, $function_packages, $vars_search_list, $fsmap ) = @_;
     confess "Trying to expand undef value" unless defined $remaining;
     my $ret = '';
     my $found;
@@ -251,7 +259,7 @@ sub subsvars {
         else {
             $found = substr $remaining, 0, 1, '';
         }
-        my $value = evaluate_macro( $found, $function_packages, $vars_search_list );
+        my $value = evaluate_macro( $found, $function_packages, $vars_search_list, $fsmap );
         if ( !defined $value ) {
             warn "Cannot evaluate '$found'\n";
             $value = '';
@@ -303,9 +311,14 @@ sub function_packages {
     $self->{FunctionPackages};
 }
 
+sub fsmap {
+    my ($self) = @_;
+    $self->{FSFunctionMap};
+}
+
 sub expand {
     my ( $self, $text ) = @_;
-    return subsvars( $text, $self->function_packages, [ $self->vars, \%ENV ] );
+    return subsvars( $text, $self->function_packages, [ $self->vars, \%ENV ], $self->fsmap );
 }
 
 sub process_ast_bit {
@@ -315,14 +328,13 @@ sub process_ast_bit {
         my $opt = $args[0];
         my ($tokens) = tokenize( $self->expand( $args[1] ) );
         foreach my $file (@$tokens) {
-            if ( open( my $mf, "<", $file ) ) {
+            eval {
+                my $mf  = $self->fsmap->{fh_open}->( '<', $file );
                 my $ast = parse_makefile($mf);
                 close($mf);
                 $self->process_ast_bit(@$_) for @$ast;
-            }
-            else {
-                warn "Cannot open $file: $!" unless ( $opt eq '-' );
-            }
+                1;
+            } or warn $@ if $opt ne '-';
         }
     }
     elsif ( $type eq 'var' ) {
@@ -422,25 +434,24 @@ sub pseudos {
 }
 
 sub find_makefile {
-    my ( $file, $extra_names ) = @_;
+    my ( $file, $extra_names, $fsmap ) = @_;
     return $file if defined $file;
     for ( qw(makefile Makefile), @{ $extra_names || [] } ) {
-        return $_ if -r;
+        return $_ if $fsmap->{file_readable}->($_);
     }
     return;
 }
 
 sub parse {
     my ( $self, $file ) = @_;
-    $file = find_makefile $file, $self->{GNU} ? ['GNUmakefile'] : [];
+    $file = find_makefile $file, $self->{GNU} ? ['GNUmakefile'] : [], $self->fsmap;
     my $fh;
     if ( ref $file eq 'SCALAR' ) {
         open my $tfh, "+<", $file;
         $fh = $tfh;
     }
     else {
-        open( my $mf, "<", $file ) or croak("Cannot open $file: $!");
-        $fh = $mf;
+        $fh = $self->fsmap->{fh_open}->( '<', $file );
     }
     my $ast = parse_makefile($fh);
     $self->process_ast_bit(@$_) for @$ast;
@@ -563,6 +574,7 @@ sub new {
         Need             => {},
         Done             => {},
         FunctionPackages => [qw(Make::Functions)],
+        FSFunctionMap    => \%fs_function_map,
         %args,
     }, $class;
     $self->set_var( 'CC',     $Config{cc} );
@@ -640,6 +652,14 @@ If true, then F<GNUmakefile> is looked for first.
 Array-ref of package names to search for GNU-make style
 functions. Defaults to L<Make::Functions>.
 
+=head3 FSFunctionMap
+
+Hash-ref of file-system functions by which to access the
+file-system. Created to help testing, but might be more widely useful.
+Defaults to code accessing the actual local filesystem. The various
+functions are expected to return real Perl filehandles. Relevant keys:
+C<glob>, C<fh_open>, C<fh_write>, C<mtime>.
+
 =head2 parse
 
 Parses the given makefile. If none or C<undef>, these files will be tried,
@@ -701,6 +721,10 @@ Returns a hash-ref of the current set of variables.
 
 Returns an array-ref of the packages to search for macro functions.
 
+=head2 fsmap
+
+Returns a hash-ref of the L</FSFunctionMap>.
+
 =head1 FUNCTIONS
 
 =head2 parse_makefile
@@ -720,6 +744,7 @@ Given a line, returns array-ref of the space-separated "tokens".
         'hi $(shell echo there)',
         \@function_packages,
         [ \%vars ],
+        $fsmap,
     );
     # "hi there"
 

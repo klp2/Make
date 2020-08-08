@@ -8,35 +8,35 @@ our $VERSION = '1.2.0';
 my @temp_handles;    # so they don't get destroyed before end of program
 
 sub wildcard {
-    my @args = @_;
+    my ( $fsmap, @args ) = @_;
     ## no critic (BuiltinFunctions::RequireBlockMap)
-    return map glob, @args;
+    return map $fsmap->{glob}->($_), @args;
     ## use critic
 }
 
 sub shell {
-    my @args  = @_;
+    my ( $fsmap, @args ) = @_;
     my $value = `@args`;
     chomp $value;
     return split "\n", $value;
 }
 
 sub addprefix {
-    my ( $prefix, $text_input ) = @_;
+    my ( $fsmap, $prefix, $text_input ) = @_;
     ## no critic (BuiltinFunctions::RequireBlockMap)
     return map $prefix . $_, @{ Make::tokenize($text_input) };
     ## use critic
 }
 
 sub notdir {
-    my ($text_input) = @_;
+    my ( $fsmap, $text_input ) = @_;
     my @files = @{ Make::tokenize($text_input) };
     s#^.*/## for @files;
     return @files;
 }
 
 sub dir {
-    my ($text_input) = @_;
+    my ( $fsmap, $text_input ) = @_;
     my @files = @{ Make::tokenize($text_input) };
     foreach (@files) {
         $_ = './' unless s#^(.*)/[^/]*$#$1#;
@@ -45,21 +45,21 @@ sub dir {
 }
 
 sub subst {
-    my ( $from, $to, $value ) = @_;
+    my ( $fsmap, $from, $to, $value ) = @_;
     $from = quotemeta $from;
     $value =~ s/$from/$to/g;
     return $value;
 }
 
 sub patsubst {
-    my ( $from, $to, $value ) = @_;
+    my ( $fsmap, $from, $to, $value ) = @_;
     $from = quotemeta $from;
     $value =~ s/$from(?=(?:\s|\z))/$to/g;
     return $value;
 }
 
 sub mktmp {
-    my ($text_input) = @_;
+    my ( $fsmap, $text_input ) = @_;
     my $fh = File::Temp->new;    # default UNLINK = 1
     push @temp_handles, $fh;
     print $fh $text_input;
@@ -73,7 +73,7 @@ Make::Functions - Functions in Makefile macros
 =head1 SYNOPSIS
 
     require Make::Functions;
-    my ($dir) = Make::Functions::dir("x/y");
+    my ($dir) = Make::Functions::dir($fsmap, "x/y");
     # $dir now "x"
 
 =head1 DESCRIPTION
@@ -85,10 +85,10 @@ Package that contains the various functions used by L<Make>.
 Implements GNU-make style functions. The call interface for all these
 Perl functions is:
 
-    my @return_list = func(@args);
+    my @return_list = func($fsmap, @args);
 
 The args will have been extracted from the Makefile, comma-separated,
-as in GNU make.
+as in GNU make. The first arg is a L<Make/FSFunctionMap>.
 
 =head2 wildcard
 

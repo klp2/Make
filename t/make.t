@@ -51,7 +51,8 @@ my $VARS      = {
     space => ' ',
     comma => ',',
 };
-my @SUBs = (
+my $fsmap = make_fsmap( { Changes => [ 1, 'hi' ], README => [ 1, 'there' ], NOT => [ 1, 'in' ] } );
+my @SUBs  = (
     [ 'none',                                 'none' ],
     [ 'this $(k1) is',                        'this k2 is' ],
     [ 'this $$(k1) is not',                   'this $(k1) is not' ],
@@ -65,7 +66,7 @@ my @SUBs = (
     [ 'this $(files:.o=.c) is',               'this a.c b.c c.c is' ],
     [ '$(shell echo hi; echo there)',         'hi there' ],
     [ "\$(shell \"$^X\" -pe 1 \$(mktmp hi))", 'hi' ],
-    [ '$(wildcard Chan* RE*)',                'Changes README' ],
+    [ '$(wildcard Chan* RE* NO*)',            'Changes README NOT' ],
     [ '$(addprefix x/,1 2)',                  'x/1 x/2' ],
     [ '$(notdir x/1 x/2)',                    '1 2' ],
     [ '$(dir x/1 y/2 3)',                     'x y ./' ],
@@ -74,7 +75,7 @@ my @SUBs = (
 );
 for my $l (@SUBs) {
     my ( $in, $expected, $err ) = @$l;
-    my ($got) = eval { Make::subsvars( $in, $FUNCTIONS, [$VARS] ) };
+    my ($got) = eval { Make::subsvars( $in, $FUNCTIONS, [$VARS], $fsmap ) };
     like $@, $err || qr/^$/;
     is $got, $expected;
 }
@@ -146,8 +147,13 @@ $got = [ Make::parse_args(qw(all VAR=value)) ];
 is_deeply $got, [ [ [qw(VAR value)] ], ['all'] ] or diag explain $got;
 
 truncate $tempfile, 0;
-$m = Make->new;
-$m->parse( \sprintf <<'EOF', $tempfile );
+$fsmap = make_fsmap(
+    {
+        'a.c'       => [ 2, 'hi' ],
+        'a.o'       => [ 1, 'yo' ],
+        'b.c'       => [ 2, 'hi' ],
+        'b.o'       => [ 1, 'yo' ],
+        GNUmakefile => [ 1, sprintf( <<'EOF', $tempfile ) ] } );
 objs = a.o b.o
 tempfile = %s
 CC = @echo COMPILE >>"$(tempfile)"
@@ -157,6 +163,8 @@ all: $(objs)
 a.o : a.c # these are so [ab].c "can be made" so implicit rule matches
 b.o : b.c
 EOF
+$m = Make->new( FSFunctionMap => $fsmap, GNU => 1 );
+$m->parse;
 $got = $m->target('all')->rules->[0]->prereqs;
 is_deeply $got, [qw(a.o b.o)] or diag explain $got;
 $got = $m->target('a.o')->rules->[0]->prereqs;
@@ -166,3 +174,30 @@ $contents = do { local $/; open my $fh, '<', $tempfile; <$fh> };
 is $contents, "COMPILE -c -o a.o a.c\nCOMPILE -c -o b.o b.c\n";
 
 done_testing;
+
+sub make_fsmap {
+    my ($vfs) = @_;
+    my %fh2file_tuple;
+    return {
+        glob => sub {
+            my @results;
+            for my $subpat ( split /\s+/, $_[0] ) {
+                $subpat =~ s/\*/.*/g;    # ignore ?, [], {} for now
+                ## no critic (BuiltinFunctions::RequireBlockGrep)
+                push @results, grep /^$subpat$/, sort keys %$vfs;
+                ## use critic
+            }
+            return @results;
+        },
+        fh_open => sub {
+            die "@_: No such file or directory" unless exists $vfs->{ $_[1] };
+            my $file_tuple = $vfs->{ $_[1] };
+            open my $fh, "+$_[0]", \$file_tuple->[1];
+            $fh2file_tuple{$fh} = $file_tuple;
+            return $fh;
+        },
+        fh_write      => sub { my $fh = shift; $fh2file_tuple{$fh}[0] = time; print {$fh} @_ },
+        file_readable => sub { exists $vfs->{ $_[0] } },
+        mtime         => sub { ( $vfs->{ $_[0] } || [] )->[0] },
+    };
+}
