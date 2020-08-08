@@ -20,7 +20,6 @@ require Make::Functions;
 
 my $DEFAULTS_AST;
 my %date;
-my $generation = 0;    # lexical cross-package scope used!
 
 ## no critic (Subroutines::RequireArgUnpacking Subroutines::RequireFinalReturn)
 sub load_modules {
@@ -479,7 +478,6 @@ sub parse_cmdline {
 sub exec {
     my ( $self, $line ) = @_;
     undef %date;
-    $generation++;
     my $parsed = parse_cmdline($line);
     print "$parsed->{line}\n" unless $parsed->{silent};
     my $code = system $parsed->{line};
