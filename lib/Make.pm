@@ -370,7 +370,18 @@ sub parse_makefile {
         elsif (/^vpath\s+(\S+)\s+(.*)$/) {
             push @ast, [ 'vpath', $1, $2 ];
         }
-        elsif (/^\s*([^:]*?)\s*(::?)\s*(.*?)(?:\s*;\s*(.*))?$/) {
+        elsif (
+            /^
+                \s*
+                ([^:\#]*?)
+                \s*
+                (::?)
+                \s*
+                ((?:[^;\#]*\#.*|.*?))
+                (?:\s*;\s*(.*))?
+            $/sx
+            )
+        {
             my ( $target, $kind, $prereqs, $maybe_cmd ) = ( $1, $2, $3, $4 );
             my @cmnds = defined $maybe_cmd ? ($maybe_cmd) : ();
             $prereqs =~ s/\s*#.*//;

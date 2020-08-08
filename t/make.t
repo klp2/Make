@@ -24,13 +24,14 @@ my @ASTs = (
         "# header\n.c.o :\n\techo hi\n# comment\n\n\techo yo\n",
         [ [ 'comment', 'header' ], [ 'rule', '.c.o', ':', '', [ 'echo hi', 'echo yo' ] ], ],
     ],
-    [ "all : other ; echo hi\n", [ [ 'rule', 'all', ':', 'other', ['echo hi'] ] ], ],
+    [ "all : other ; echo hi # keep\n", [ [ 'rule', 'all', ':', 'other', ['echo hi # keep'] ] ], ],
+    [ "all : other # drop ; echo hi\n", [ [ 'rule', 'all', ':', 'other', [] ] ], ],
 );
 for my $l (@ASTs) {
     my ( $in, $expected ) = @$l;
     open my $fh, '+<', \$in or die "open: $!";
     my $got = Make::parse_makefile($fh);
-    is_deeply $got, $expected or diag explain $got;
+    is_deeply $got, $expected, $in or diag explain $got;
 }
 
 my @TOKENs = ( [ "a b c", [qw(a b c)] ], [ " a b c", [qw(a b c)] ], );
