@@ -416,18 +416,18 @@ sub pseudos {
     return;
 }
 
+sub find_makefile {
+    my ( $file, $extra_names ) = @_;
+    return $file if defined $file;
+    for ( qw(makefile Makefile), @{ $extra_names || [] } ) {
+        return $_ if -r;
+    }
+    return;
+}
+
 sub parse {
     my ( $self, $file ) = @_;
-    if ( !defined $file ) {
-        my @files = qw(makefile Makefile);
-        unshift( @files, 'GNUmakefile' ) if ( $self->{GNU} );
-        foreach my $name (@files) {
-            if ( -r $name ) {
-                $file = $name;
-                last;
-            }
-        }
-    }
+    $file = find_makefile $file, $self->{GNU} ? ['GNUmakefile'] : [];
     my $fh;
     if ( ref $file eq 'SCALAR' ) {
         open my $tfh, "+<", $file;
