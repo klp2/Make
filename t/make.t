@@ -17,13 +17,14 @@ my @ASTs = (
         "\n.SUFFIXES: .o .c .y .h .sh .cps # comment\n\n.c.o :\n\t\$(CC) \$(CFLAGS) \$(CPPFLAGS) -c -o \$@ \$<\n\n",
         [
             [ 'rule', '.SUFFIXES', ':', '.o .c .y .h .sh .cps', [] ],
-            [ 'rule', '.c.o ',     ':', '',                     ['$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<'] ],
+            [ 'rule', '.c.o',      ':', '',                     ['$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<'] ],
         ],
     ],
     [
         "# header\n.c.o :\n\techo hi\n# comment\n\n\techo yo\n",
-        [ [ 'comment', 'header' ], [ 'rule', '.c.o ', ':', '', [ 'echo hi', 'echo yo' ] ], ],
+        [ [ 'comment', 'header' ], [ 'rule', '.c.o', ':', '', [ 'echo hi', 'echo yo' ] ], ],
     ],
+    [ "all : other ; echo hi\n", [ [ 'rule', 'all', ':', 'other', ['echo hi'] ] ], ],
 );
 for my $l (@ASTs) {
     my ( $in, $expected ) = @$l;
