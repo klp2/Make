@@ -353,7 +353,6 @@ sub parse_makefile {
     my ($fh) = @_;
     my @ast;
     local $_ = get_full_line($fh);
-    my $was_rule = 0;
     while (1) {
         last unless ( defined $_ );
         s/^\s+//;
@@ -393,16 +392,15 @@ sub parse_makefile {
                 s/^\s+//;
                 push( @cmnds, $_ );
             }
-            $was_rule = 1;
             push @ast, [ 'rule', $target, $kind, $prereqs, \@cmnds ];
+            redo;
         }
         else {
             warn "Ignore '$_'\n";
         }
     }
     continue {
-        $_        = get_full_line($fh) if !$was_rule;
-        $was_rule = 0;
+        $_ = get_full_line($fh);
     }
     return \@ast;
 }
