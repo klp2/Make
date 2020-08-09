@@ -133,7 +133,7 @@ sub dotrules {
 sub date {
     my ( $self, $name ) = @_;
     unless ( exists $date{$name} ) {
-        $date{$name} = -M $name;
+        $date{$name} = ( stat $name )[9];
     }
     return $date{$name};
 }

@@ -30,7 +30,7 @@ sub out_of_date {
     foreach my $dep ( @{ $self->prereqs } ) {
         my $date = $info->date($dep);
         $count++;
-        if ( !defined($date) || !defined($tdate) || $date < $tdate ) {
+        if ( !defined($date) || !defined($tdate) || $date > $tdate ) {
             DEBUG and print STDERR $target->Name . " outdated by " . $dep . "\n";
             return 1 unless wantarray;
             push( @dep, $dep );
