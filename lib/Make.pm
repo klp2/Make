@@ -181,7 +181,7 @@ sub needs {
     my ( $self, $target ) = @_;
     unless ( $self->{Done}{$target} ) {
         if ( exists $self->{Depend}{$target} ) {
-            my @prereqs = tokenize( $self->expand( $self->{Depend}{$target} ) );
+            my @prereqs = @{ tokenize( $self->expand( $self->{Depend}{$target} ) ) };
             foreach (@prereqs) {
                 $self->needs($_);
             }
@@ -273,9 +273,10 @@ sub subsvars {
 # like GNU make will need to understand \ to quote spaces, for deps
 # also C:\xyz as a non-target (overlap with parse_makefile)
 sub tokenize {
-    my ($string) = @_;
-    ## no critic (BuiltinFunctions::RequireBlockGrep)
-    return [ grep length, split /\s+/, $string ];
+    my ( $string, @extrasep ) = @_;
+    ## no critic ( BuiltinFunctions::RequireBlockGrep BuiltinFunctions::RequireBlockMap)
+    my $pat = join '|', '\s', map quotemeta, @extrasep;
+    return [ grep length, split /(?:$pat)+/, $string ];
     ## use critic
 }
 
@@ -378,7 +379,9 @@ sub parse_makefile {
             push @ast, [ 'var', $1, $2 ];
         }
         elsif (/^vpath\s+(\S+)\s+(.*)$/) {
-            push @ast, [ 'vpath', $1, $2 ];
+            my ( $pattern, $path ) = ( $1, $2 );
+            my @path = @{ tokenize $path, $Config{path_sep} };
+            push @ast, [ 'vpath', $pattern, @path ];
         }
         elsif (
             /^
@@ -761,7 +764,8 @@ C<var>, C<rule>), followed by relevant data.
 
 =head2 tokenize
 
-Given a line, returns array-ref of the space-separated "tokens".
+Given a line, returns array-ref of the space-separated "tokens". Also
+splits on any further args.
 
 =head2 subsvars
 

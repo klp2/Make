@@ -13,6 +13,7 @@ for my $l (@LINES) {
 }
 
 my @ASTs = (
+    [ "vpath %.c src/%.c othersrc/%.c\n", [ [ 'vpath', '%.c', 'src/%.c', 'othersrc/%.c' ], ], ],
     [
         "\n.SUFFIXES: .o .c .y .h .sh .cps # comment\n\n.c.o :\n\t\$(CC) \$(CFLAGS) \$(CPPFLAGS) -c -o \$@ \$<\n\n",
         [
@@ -34,10 +35,10 @@ for my $l (@ASTs) {
     is_deeply $got, $expected, $in or diag explain $got;
 }
 
-my @TOKENs = ( [ "a b c", [qw(a b c)] ], [ " a b c", [qw(a b c)] ], );
+my @TOKENs = ( [ "a b c", [qw(a b c)] ], [ " a b c", [qw(a b c)] ], [ " a: b c", [qw(a b c)] ], );
 for my $l (@TOKENs) {
     my ( $in, $expected, $err ) = @$l;
-    my ($got) = eval { Make::tokenize($in) };
+    my ($got) = eval { Make::tokenize( $in, ':' ) };
     like $@,        $err || qr/^$/;
     is_deeply $got, $expected or diag explain $got;
 }
