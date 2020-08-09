@@ -31,8 +31,7 @@ sub out_of_date {
         my $date = $info->date($dep);
         $count++;
         if ( !defined($date) || !defined($tdate) || $date < $tdate ) {
-
-            # warn $target->Name." ood wrt ".$dep."\n";
+            DEBUG and print STDERR $target->Name . " outdated by " . $dep . "\n";
             return 1 unless wantarray;
             push( @dep, $dep );
         }

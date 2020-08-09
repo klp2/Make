@@ -158,7 +158,7 @@ sub patrule {
             ## no critic (BuiltinFunctions::RequireBlockGrep)
             my @failed = grep !( $self->date($_) or $self->get_target($_) ), @dep;
             ## use critic
-            DEBUG and print STDERR "  Failed: (@failed)\n";
+            DEBUG and print STDERR "  " . ( @failed ? "Failed: (@failed)" : "Matched (@dep)" ) . "\n";
             next if @failed;
             return Make::Rule->new( $kind, \@dep, $rule->recipe );
         }
