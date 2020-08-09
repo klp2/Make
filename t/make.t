@@ -162,8 +162,6 @@ CC = @echo COMPILE >>"$(tempfile)"
 CFLAGS =
 all: $(objs)
 .PHONY: all
-a.o : a.c # these are so [ab].c "can be made" so implicit rule matches
-b.o : b.c
 EOF
 $m = Make->new( FSFunctionMap => $fsmap, GNU => 1 );
 $m->parse;

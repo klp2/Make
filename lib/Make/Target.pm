@@ -38,12 +38,18 @@ sub has_recipe {
     my ($self) = @_;
     return $self->{HAS_RECIPE} if defined $self->{HAS_RECIPE};
     ## no critic (BuiltinFunctions::RequireBlockGrep)
-    return $self->{HAS_RECIPE} = grep @{ $_->recipe }, @{ $self->rules };
+    return $self->{HAS_RECIPE} = grep @{ $_->recipe }, @{ $self->{RULES} };
     ## use critic
 }
 
 sub rules {
-    return shift->{RULES};
+    my ($self) = @_;
+    if ( !$self->phony && !$self->has_recipe ) {
+        my $rule = $self->Info->patrule( $self->Name, $self->{RULE_TYPE} || ':' );
+        DEBUG and print STDERR "Implicit rule (", $self->Name, "): @{ $rule ? $rule->prereqs : ['none'] }\n";
+        $self->add_rule($rule) if $rule;
+    }
+    return $self->{RULES};
 }
 
 sub add_rule {
@@ -85,11 +91,6 @@ sub recurse {
     my $info = $self->Info;
     my @results;
     DEBUG and print STDERR "Build " . $self->Name, "\n";
-    if ( !$self->phony && !$self->has_recipe ) {
-        my $rule = $info->patrule( $self->Name, $self->{RULE_TYPE} || ':' );
-        DEBUG and print STDERR "Implicit rule (", $self->Name, "): @{ $rule ? $rule->prereqs : ['none'] }\n";
-        $self->add_rule($rule) if $rule;
-    }
     foreach my $rule ( @{ $self->rules } ) {
         ## no critic (BuiltinFunctions::RequireBlockMap)
         push @results, map $info->target($_)->recurse($method), @{ $rule->prereqs };
