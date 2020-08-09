@@ -84,7 +84,7 @@ sub patmatch {
         if !exists $pattern_cache{$pat};
     ## use critic
     $pat = $pattern_cache{$pat};
-    if ( $target =~ /$pat/ ) {
+    if ( $target =~ /^$pat$/ ) {
         return $1;
     }
     return;
