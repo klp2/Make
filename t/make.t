@@ -150,12 +150,13 @@ is_deeply $got, [ [ [qw(VAR value)] ], ['all'] ] or diag explain $got;
 truncate $tempfile, 0;
 $fsmap = make_fsmap(
     {
-        'a.c'       => [ 2, 'hi' ],
+        'src/a.c'   => [ 2, 'hi' ],
         'a.o'       => [ 1, 'yo' ],
         'b.c'       => [ 2, 'hi' ],
         'b.o'       => [ 1, 'yo' ],
         GNUmakefile => [ 1, "include inc.mk\n-include not.mk\n" ],
         'inc.mk'    => [ 1, sprintf( <<'EOF', $tempfile ) ] } );
+vpath %%.c src/%%.c # double-percent because sprintf
 objs = a.o b.o
 tempfile = %s
 CC = @echo COMPILE >>"$(tempfile)"
@@ -168,10 +169,10 @@ $m->parse;
 $got = $m->target('all')->rules->[0]->prereqs;
 is_deeply $got, [qw(a.o b.o)] or diag explain $got;
 $got = $m->target('a.o')->rules->[0]->prereqs;
-is_deeply $got, ['a.c'] or diag explain $got;
+is_deeply $got, ['src/a.c'] or diag explain $got;
 $m->Make('all');
 $contents = do { local $/; open my $fh, '<', $tempfile; <$fh> };
-is $contents, "COMPILE -c -o a.o a.c\nCOMPILE -c -o b.o b.c\n";
+is $contents, "COMPILE -c -o a.o src/a.c\nCOMPILE -c -o b.o b.c\n";
 
 done_testing;
 

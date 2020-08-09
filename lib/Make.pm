@@ -90,28 +90,20 @@ sub patmatch {
     return;
 }
 
-#
-# old vpath lookup routine
-#
 sub locate {
-    my $self = shift;
-    local $_ = shift;
+    my ( $self, $file ) = @_;
     my $readable = $self->fsmap->{file_readable};
-    return $_ if $readable->($_);
-    foreach my $key ( sort keys %{ $self->{vpath} } ) {
-        my $Pat;
-        if ( defined( $Pat = patmatch( $key, $_ ) ) ) {
-            foreach my $dir ( split( /:/, $self->{vpath}{$key} ) ) {
-                return "$dir/$_" if $readable->("$dir/$_");
-            }
+    foreach my $key ( sort keys %{ $self->{Vpath} } ) {
+        next unless defined( my $Pat = patmatch( $key, $file ) );
+        foreach my $dir ( @{ $self->{Vpath}{$key} } ) {
+            ( my $maybe_file = $dir ) =~ s/%/$Pat/g;
+            return $maybe_file if $readable->($maybe_file);
         }
     }
     return;
 }
 
-#
 # Convert traditional .c.o rules into GNU-like into %.o : %.c
-#
 sub dotrules {
     my ($self) = @_;
     my @suffix = $self->suffixes;
@@ -162,38 +154,20 @@ sub patrule {
             my @dep = @{ $rule->prereqs };
             DEBUG and print STDERR "  Try rule : @dep\n";
             next unless @dep;
-            s/%/$Pat/g for @dep;
-            ## no critic (BuiltinFunctions::RequireBlockGrep)
-            my @failed = grep !( $self->date($_) or $self->get_target($_) ), @dep;
-            ## use critic
+            my @failed;
+            for my $this_dep (@dep) {
+                $this_dep =~ s/%/$Pat/g;
+                next if $self->date($this_dep) or $self->get_target($this_dep);
+                my $maybe = $self->locate($this_dep);
+                if ( defined $maybe ) {
+                    $this_dep = $maybe;
+                    next;
+                }
+                push @failed, $this_dep;
+            }
             DEBUG and print STDERR "  " . ( @failed ? "Failed: (@failed)" : "Matched (@dep)" ) . "\n";
             next if @failed;
             return Make::Rule->new( $kind, \@dep, $rule->recipe );
-        }
-    }
-    return;
-}
-
-#
-# Old code to handle vpath stuff - not used yet
-#
-sub needs {
-    my ( $self, $target ) = @_;
-    unless ( $self->{Done}{$target} ) {
-        if ( exists $self->{Depend}{$target} ) {
-            my @prereqs = @{ tokenize( $self->expand( $self->{Depend}{$target} ) ) };
-            foreach (@prereqs) {
-                $self->needs($_);
-            }
-        }
-        else {
-            my $vtarget = $self->locate($target);
-            if ( defined $vtarget ) {
-                $self->{Need}{$vtarget} = $target;
-            }
-            else {
-                $self->{Need}{$target} = $target;
-            }
         }
     }
     return;
@@ -342,7 +316,8 @@ sub process_ast_bit {
         $self->set_var( $args[0], defined $args[1] ? $args[1] : "" );
     }
     elsif ( $type eq 'vpath' ) {
-        $self->{Vpath}{ $args[0] } = $args[1];
+        my ( $pattern, @vpath ) = @args;
+        $self->{Vpath}{$pattern} = \@vpath;
     }
     elsif ( $type eq 'rule' ) {
         my ( $targets, $kind, $prereqs, $cmnds ) = @args;
@@ -574,7 +549,6 @@ sub new {
         Vars             => {},                      # Variables defined in makefile
         Depend           => {},                      # hash of targets
         Pass             => 0,                       # incremented each sweep
-        Need             => {},
         Done             => {},
         FunctionPackages => [qw(Make::Functions)],
         FSFunctionMap    => \%fs_function_map,
@@ -634,6 +608,10 @@ Directives:
 
     vpath %.c src/%.c
     [-]include otherfile.mk # - means no warn on failure to include
+
+Please note the C<vpath> does not have the GNU-make behaviour of
+discarding the found path if an inferred target must be rebuilt, since
+this is too non-deterministic / confusing behaviour for this author.
 
 Rules:
 
