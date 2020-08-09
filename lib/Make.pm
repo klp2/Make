@@ -613,6 +613,32 @@ Make - Pure-Perl implementation of a somewhat GNU-like make.
 
 =head1 DESCRIPTION
 
+Implements in pure Perl a somewhat GNU-like make, intended to be highly
+customisable.
+
+Via pure-perl-make Make has built perl/Tk from the C<MakeMaker> generated
+Makefiles...
+
+=head1 MAKEFILE SYNTAX
+
+Broadly, there are macros, directives, and rules (including recipes).
+
+Macros:
+
+    varname = value
+
+Directives:
+
+    vpath %.c src/%.c
+    [-]include otherfile.mk # - means no warn on failure to include
+
+Rules:
+
+    target : prerequisite1 prerequisite2[; immediate recipe]
+    (tab character)follow-on recipe...
+
+Recipe lines can start with C<@> (do not echo), C<-> (continue on failure).
+
 In addition to traditional
 
 	.c.o :
@@ -623,8 +649,7 @@ GNU make's 'pattern' rules e.g.
 	%.o : %.c
 		$(CC) -c ...
 
-Via pure-perl-make Make has built perl/Tk from the C<MakeMaker> generated
-Makefiles...
+The former gets internally translated to the latter.
 
 =head1 METHODS
 
