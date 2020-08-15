@@ -71,7 +71,7 @@ my @SUBs  = (
     [ '$(subst $(space),$(comma),$(files))',  'a.o,b.o,c.o' ],
     [ 'not $(absent) is',                     'not  is' ],
     [ 'this $(files:.o=.c) is',               'this a.c b.c c.c is' ],
-    [ '$(shell echo hi; echo there)',         'hi there' ],
+    [ '$(shell echo hi)',                     'hi' ],
     [ "\$(shell \"$^X\" -pe 1 \$(mktmp hi))", 'hi' ],
     [ '$(wildcard Chan* RE* NO*)',            'Changes README NOT' ],
     [ '$(addprefix x/,1 2)',                  'x/1 x/2' ],
@@ -125,7 +125,7 @@ ok !$m->get_target('not_there'), 'get_target';
 ok $m->get_target('all'), 'get_target existing';
 $m->Make('all');
 my $contents = do { local $/; open my $fh, '<', $tempfile; <$fh> };
-is $contents, "other Changes README Changes value\n";
+like $contents, qr/^other Changes README Changes value/;
 my ($other_rule) = @{ $m->target('other')->rules };
 my $got = $other_rule->recipe;
 is_deeply $got, ['@echo $@ $^ $< $(var) >"$(tempfile)"'] or diag explain $got;
@@ -138,10 +138,10 @@ ok exists $got->{'@'}, 'Rules.Vars.EXISTS';
 is_deeply [ keys %$got ], [qw( @ * ^ ? < )] or diag explain $got;
 
 $m = Make->new;
-$m->parse( \sprintf <<'EOF', $tempfile );
+$m->parse( \sprintf <<'EOF', $tempfile, $^X );
 space = $() $()
 tempfile = %s
-all: ; @echo "$(space)" >"$(tempfile)"
+all: ; @"%s" -e "print shift().qq{\n}" "$(space)" >"$(tempfile)"
 .PHONY: all
 EOF
 ok $m->target('all')->phony,  'all is phony';
@@ -161,11 +161,11 @@ $fsmap = make_fsmap(
         'b.c'       => [ 2, 'hi' ],
         'b.o'       => [ 1, 'yo' ],
         GNUmakefile => [ 1, "include inc.mk\n-include not.mk\n" ],
-        'inc.mk'    => [ 1, sprintf( <<'EOF', $tempfile ) ] } );
+        'inc.mk'    => [ 1, sprintf( <<'EOF', $tempfile, $^X ) ] } );
 vpath %%.c src/%%.c # double-percent because sprintf
 objs = a.o b.o
 tempfile = %s
-CC = @echo COMPILE >>"$(tempfile)"
+CC = @"%s" -e "print qq[@ARGV\n]" COMPILE >>"$(tempfile)"
 CFLAGS =
 all: $(objs)
 .PHONY: all
