@@ -10,7 +10,7 @@ my %WriteMakefileArgs = (
         "ExtUtils::MakeMaker" => 0
     },
     "VERSION_FROM" => "lib/Make.pm",
-    "DISTNAME"     => "Make",
+    "NAME"         => "Make",
     "EXE_FILES"    => [ glob 'scripts/*' ],
     "LICENSE"      => "perl",
     "META_MERGE"   => {
@@ -18,7 +18,6 @@ my %WriteMakefileArgs = (
         'meta-spec'    => { version => 2 },
         no_index       => { directory => ['t'] },
         prereqs        => {
-            runtime => { requires => { perl => '5.006' } },
             develop => {
                 requires => {
                     "Test::Version"       => "1.003001",
@@ -40,7 +39,6 @@ my %WriteMakefileArgs = (
         },
     },
     "MIN_PERL_VERSION" => "5.006",
-    "NAME"             => "Make",
     "PREREQ_PM"        => {
         "Carp"             => 0,
         "Config"           => 0,
@@ -54,7 +52,6 @@ my %WriteMakefileArgs = (
     "TEST_REQUIRES" => {
         "Test::More" => "1.00",
     },
-    "VERSION" => "1.2.0",
 );
 
 my %FallbackPrereqs = (
@@ -65,8 +62,10 @@ my %FallbackPrereqs = (
     "ExtUtils::MakeMaker" => 0,
     "File::Spec"          => 0,
     "Test::More"          => "1.00",
+    "Text::Balanced"      => '2.03',
+    "Text::ParseWords"    => '3.30',
     "strict"              => 0,
-    "warnings"            => 0
+    "warnings"            => 0,
 );
 
 unless ( eval { ExtUtils::MakeMaker->VERSION(6.63_03) } ) {
