@@ -261,13 +261,12 @@ sub get_full_line {
     my ($fh) = @_;
     my $final = my $line = <$fh>;
     return if !defined $line;
-    chomp($final);
+    $final =~ s/\r?\n\z//;
     while ( $final =~ /\\$/ ) {
-        chop $final;
-        $final =~ s/\s*$//;
+        $final =~ s/\s*\\\z//;
         $line = <$fh>;
         last if !defined $line;
-        chomp $line;
+        $line =~ s/\s*\z//;
         $line =~ s/^\s*/ /;
         $final .= $line;
     }

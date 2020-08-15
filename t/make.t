@@ -5,7 +5,7 @@ use Make;
 use File::Spec;
 use File::Temp qw(tempfile);
 
-my @LINES = ( [ "all : one \\\n  two\n", 'all : one two' ], );
+my @LINES = ( [ "all : one \\\n  two\n", 'all : one two' ], [ "all : one \\\r\n  two\r\n", 'all : one two' ] );
 for my $l (@LINES) {
     my ( $in, $expected ) = @$l;
     open my $fh, '+<', \$in or die "open: $!";
@@ -27,6 +27,8 @@ my @ASTs = (
     ],
     [ "all : other ; echo hi # keep\n", [ [ 'rule', 'all', ':', 'other', ['echo hi # keep'] ] ], ],
     [ "all : other # drop ; echo hi\n", [ [ 'rule', 'all', ':', 'other', [] ] ], ],
+    [ "x = y\n",                        [ [ 'var',  'x',   'y', ] ], ],
+    [ "x = y\r\n",                      [ [ 'var',  'x',   'y', ] ], ],
 );
 for my $l (@ASTs) {
     my ( $in, $expected ) = @$l;
