@@ -40,7 +40,7 @@ my @TOKENs = (
     [ " a b c",   [qw(a b c)] ],
     [ " a: b c",  [qw(a b c)] ],
     [ " a  b c",  [qw(a b c)] ],
-    [ ' a\\ b c', [ 'a\ b', 'c' ] ],
+    [ ' a\\ b c', [ 'a b', 'c' ] ],
 );
 for my $l (@TOKENs) {
     my ( $in, $expected, $err ) = @$l;
