@@ -3,7 +3,7 @@ package Make;
 use strict;
 use warnings;
 
-our $VERSION = '1.2.0';
+our $VERSION = '2.000';
 
 use Carp qw(confess croak);
 use Config;
