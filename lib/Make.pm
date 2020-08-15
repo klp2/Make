@@ -13,6 +13,7 @@ use Make::Target ();
 use Make::Rule   ();
 use File::Temp;
 use Text::Balanced qw(extract_bracketed);
+use Text::ParseWords qw(parse_line);
 ## no critic (ValuesAndExpressions::ProhibitConstantPragma)
 use constant DEBUG => $ENV{MAKE_DEBUG};
 ## use critic
@@ -249,8 +250,8 @@ sub subsvars {
 sub tokenize {
     my ( $string, @extrasep ) = @_;
     ## no critic ( BuiltinFunctions::RequireBlockGrep BuiltinFunctions::RequireBlockMap)
-    my $pat = join '|', '\s', map quotemeta, @extrasep;
-    return [ grep length, split /(?:$pat)+/, $string ];
+    my $pat = join '|', '\s+', map quotemeta, @extrasep;
+    return [ grep length, parse_line $pat, 1, $string ];
     ## use critic
 }
 

@@ -35,7 +35,13 @@ for my $l (@ASTs) {
     is_deeply $got, $expected, $in or diag explain $got;
 }
 
-my @TOKENs = ( [ "a b c", [qw(a b c)] ], [ " a b c", [qw(a b c)] ], [ " a: b c", [qw(a b c)] ], );
+my @TOKENs = (
+    [ "a b c",    [qw(a b c)] ],
+    [ " a b c",   [qw(a b c)] ],
+    [ " a: b c",  [qw(a b c)] ],
+    [ " a  b c",  [qw(a b c)] ],
+    [ ' a\\ b c', [ 'a\ b', 'c' ] ],
+);
 for my $l (@TOKENs) {
     my ( $in, $expected, $err ) = @$l;
     my ($got) = eval { Make::tokenize( $in, ':' ) };
