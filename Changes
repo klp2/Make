@@ -1,3 +1,8 @@
+2.001 2020-08-16
+- fix Changes formatting
+- also FSFunctionMap implements virtual filesystem
+- tidyup and extra release prompted by CPAN Day
+
 2.000 2020-08-15
 - works on Win32 including on "Perl in space", in GNU make compatible style
 - variable expansion now similar (though not yet identical) to GNU make
