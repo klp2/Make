@@ -123,8 +123,8 @@ other: Changes README
 EOF
 ok !$m->target('all')->has_recipe, 'all has no recipe';
 ok $m->target('other')->has_recipe, 'other has recipe';
-ok !$m->get_target('not_there'), 'get_target';
-ok $m->get_target('all'), 'get_target existing';
+ok !$m->has_target('not_there'), 'has_target';
+ok $m->has_target('all'), 'has_target existing';
 $m->Make('all');
 my $contents = do { local $/; open my $fh, '<', $tempfile; <$fh> };
 like $contents, qr/^other Changes README Changes value/;

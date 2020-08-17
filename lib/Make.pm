@@ -69,7 +69,7 @@ sub target {
     return $self->{Depend}{$target};
 }
 
-sub get_target {
+sub has_target {
     my ( $self, $target ) = @_;
     return exists $self->{Depend}{$target};
 }
@@ -158,7 +158,7 @@ sub patrule {
             my @failed;
             for my $this_dep (@dep) {
                 $this_dep =~ s/%/$Pat/g;
-                next if $self->date($this_dep) or $self->get_target($this_dep);
+                next if $self->date($this_dep) or $self->has_target($this_dep);
                 my $maybe = $self->locate($this_dep);
                 if ( defined $maybe ) {
                     $this_dep = $maybe;
@@ -705,7 +705,7 @@ Uses L</subsvars> to return its only arg with any macros expanded.
 
 Find or create L<Make::Target> for given target-name.
 
-=head2 get_target
+=head2 has_target
 
 Find L<Make::Target> for given target-name, or undef.
 
