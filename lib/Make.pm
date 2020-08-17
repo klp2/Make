@@ -251,7 +251,7 @@ sub tokenize {
     my ( $string, @extrasep ) = @_;
     ## no critic ( BuiltinFunctions::RequireBlockGrep BuiltinFunctions::RequireBlockMap)
     my $pat  = join '|', '\s+', map quotemeta, @extrasep;
-    my @toks = grep length, parse_line $pat, 1, $string;
+    my @toks = grep defined && length, parse_line $pat, 1, $string;
     ## use critic
     s/\\(\s)/$1/g for @toks;
     return \@toks;
