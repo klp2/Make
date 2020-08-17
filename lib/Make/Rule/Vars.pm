@@ -7,7 +7,7 @@ use Carp;
 use constant DEBUG => $ENV{MAKE_DEBUG};
 ## use critic
 
-our $VERSION = '2.001';
+our $VERSION = '2.002';
 my @KEYS = qw( @ * ^ ? < );
 my $i;
 ## no critic (BuiltinFunctions::RequireBlockMap)
