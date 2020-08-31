@@ -90,8 +90,8 @@ for my $l (@SUBs) {
 }
 
 my @CMDs = (
-    [ ' a line', { line => 'a line' } ],
-    [ 'a line',  { line => 'a line' } ],
+    [ ' a line',      { line => 'a line' } ],
+    [ 'a line',       { line => 'a line' } ],
     [ '@echo shhh',   { line => 'echo shhh',  silent   => 1 } ],
     [ '- @echo hush', { line => 'echo hush',  silent   => 1, can_fail => 1 } ],
     [ '-just do it',  { line => 'just do it', can_fail => 1 } ],
