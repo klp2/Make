@@ -168,7 +168,7 @@ vpath %%.c src/%%.c # double-percent because sprintf
 objs = a.o b.o
 tempfile = %s
 CC = @"%s" -e "print qq[@ARGV\n]" COMPILE >>"$(tempfile)"
-CFLAGS =
+.c.o: ; $(CC) -c -o $@ $<
 all: $(objs)
 .PHONY: all
 EOF

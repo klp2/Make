@@ -115,10 +115,7 @@ sub dotrules {
             next unless my $r = delete $Dot->{ $f . $t };
             DEBUG and print STDERR "Pattern %$t : %$f\n";
             my $target   = $self->target( '%' . $t );
-            my @dotrules = @{ $r->rules };
-            die "Failed on pattern rule for '$f$t', too many rules"
-                if @dotrules != 1;
-            my $thisrule = $dotrules[0];
+            my $thisrule = $r->rules->[-1];             # last-specified
             die "Failed on pattern rule for '$f$t', no prereqs allowed"
                 if @{ $thisrule->prereqs };
             my $rule = Make::Rule->new( '::', [ '%' . $f ], $thisrule->recipe );
