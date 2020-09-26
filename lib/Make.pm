@@ -91,6 +91,11 @@ sub patmatch {
     return;
 }
 
+sub in_dir {
+    my ( $file, $dir ) = @_;
+    defined $dir ? "$dir/$file" : $file;
+}
+
 sub locate {
     my ( $self, $file ) = @_;
     my $readable = $self->fsmap->{file_readable};
@@ -98,7 +103,7 @@ sub locate {
         next unless defined( my $Pat = patmatch( $key, $file ) );
         foreach my $dir ( @{ $self->{Vpath}{$key} } ) {
             ( my $maybe_file = $dir ) =~ s/%/$Pat/g;
-            return $maybe_file if $readable->($maybe_file);
+            return $maybe_file if $readable->( in_dir $maybe_file, $self->{InDir} );
         }
     }
     return;
@@ -131,7 +136,7 @@ sub dotrules {
 sub date {
     my ( $self, $name ) = @_;
     unless ( exists $date{$name} ) {
-        $date{$name} = $self->fsmap->{mtime}->($name);
+        $date{$name} = $self->fsmap->{mtime}->( in_dir $name, $self->{InDir} );
     }
     return $date{$name};
 }
@@ -303,6 +308,7 @@ sub process_ast_bit {
         my ($tokens) = tokenize( $self->expand( $args[1] ) );
         foreach my $file (@$tokens) {
             eval {
+                $file = in_dir $file, $self->{InDir};
                 my $mf  = $self->fsmap->{fh_open}->( '<', $file );
                 my $ast = parse_makefile($mf);
                 close($mf);
@@ -411,9 +417,13 @@ sub pseudos {
 }
 
 sub find_makefile {
-    my ( $file, $extra_names, $fsmap ) = @_;
-    return $file if defined $file;
-    for ( qw(makefile Makefile), @{ $extra_names || [] } ) {
+    my ( $file, $extra_names, $fsmap, $dir ) = @_;
+    return in_dir $file, $dir if defined $file;
+    my @search = ( qw(makefile Makefile), @{ $extra_names || [] } );
+    ## no critic (BuiltinFunctions::RequireBlockMap)
+    @search = map in_dir( $_, $dir ), @search;
+    ## use critic
+    for (@search) {
         return $_ if $fsmap->{file_readable}->($_);
     }
     return;
@@ -421,7 +431,7 @@ sub find_makefile {
 
 sub parse {
     my ( $self, $file ) = @_;
-    $file = find_makefile $file, $self->{GNU} ? ['GNUmakefile'] : [], $self->fsmap;
+    $file = find_makefile $file, $self->{GNU} ? ['GNUmakefile'] : [], $self->fsmap, $self->{InDir};
     my $fh;
     if ( ref $file eq 'SCALAR' ) {
         open my $tfh, "+<", $file;
@@ -664,6 +674,11 @@ file-system. Created to help testing, but might be more widely useful.
 Defaults to code accessing the actual local filesystem. The various
 functions are expected to return real Perl filehandles. Relevant keys:
 C<glob>, C<fh_open>, C<fh_write>, C<mtime>.
+
+=head3 InDir
+
+Optional. If supplied, will be treated as the current directory instead
+of the default which is the real current directory.
 
 =head2 parse
 
