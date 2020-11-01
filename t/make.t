@@ -103,14 +103,17 @@ for my $l (@CMDs) {
     is_deeply $got, $expected;
 }
 
-my $m = Make->new;
-$m->parse;
-is ref($m), 'Make';
-eval { $m->Make('all') };
-is $@, '',;
+SKIP: {
+    skip '', 2 if !$ENV{AUTHOR_TESTING};    # avoid blowing up on dmake
+    my $m = Make->new;
+    isa_ok $m, 'Make';
+    $m->parse;
+    eval { $m->Make('all') };
+    is $@, '',;
+}
 
 my ( undef, $tempfile ) = tempfile;
-$m = Make->new;
+my $m = Make->new;
 $m->parse( \sprintf <<'EOF', $tempfile );
 var = value
 tempfile = %s
