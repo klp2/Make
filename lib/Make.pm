@@ -62,9 +62,6 @@ sub target {
         elsif ( $target =~ /^\./ ) {
             $self->{Dot}{$target} = $t;
         }
-        else {
-            $self->{Vars}{'.DEFAULT_GOAL'} ||= $target;
-        }
     }
     return $self->{Depend}{$target};
 }
@@ -328,6 +325,8 @@ sub process_ast_bit {
         my ( $targets, $kind, $prereqs, $cmnds ) = @args;
         ($prereqs) = tokenize( $self->expand($prereqs) );
         ($targets) = tokenize( $self->expand($targets) );
+        $self->{Vars}{'.DEFAULT_GOAL'} ||= $targets->[0]
+            if $targets->[0] !~ /%|^\./;
         unless ( @$targets == 1 and $targets->[0] =~ /^\.[A-Z]/ ) {
             $self->target($_) for @$prereqs;    # so "exist or can be made"
         }

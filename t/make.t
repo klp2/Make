@@ -112,6 +112,12 @@ SKIP: {
     is $@, '',;
 }
 
+{
+    my $m = Make->new;
+    $m->parse( \"all: sbar sfoo\n\techo larry\n\techo howdy\n" );
+    is $m->{Vars}{'.DEFAULT_GOAL'}, 'all';
+}
+
 my ( undef, $tempfile ) = tempfile;
 my $m = Make->new;
 $m->parse( \sprintf <<'EOF', $tempfile );
