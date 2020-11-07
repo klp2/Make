@@ -29,12 +29,12 @@ my %WriteMakefileArgs = (
             },
         },
         resources => {
-            bugtracker => { web => 'http://github.com/klp2/Make/issues' },
-            homepage   => 'http://metacpan.org/pod/Make',
+            bugtracker => { web => 'https://github.com/klp2/Make/issues' },
+            homepage   => 'https://metacpan.org/pod/Make',
             repository => {
                 type => 'git',
-                url  => 'http://github.com/klp2/Make.git',
-                web  => 'http://github.com/klp2/Make',
+                url  => 'https://github.com/klp2/Make.git',
+                web  => 'https://github.com/klp2/Make',
             },
             x_IRC => 'irc://irc.perl.org/#perl'
         },
