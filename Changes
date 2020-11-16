@@ -1,4 +1,5 @@
 - doc has_target more accurately
+- add targets method
 
 2.004 2020-11-06
 - identify default target better

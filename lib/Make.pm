@@ -68,7 +68,15 @@ sub target {
 
 sub has_target {
     my ( $self, $target ) = @_;
+    confess "Trying to has_target undef value" unless defined $target;
     return exists $self->{Depend}{$target};
+}
+
+sub targets {
+    my ($self) = @_;
+    ## no critic ( BuiltinFunctions::RequireBlockGrep )
+    return grep !/%|^\./, keys %{ $self->{Depend} };
+    ## use critic
 }
 
 # Utility routine for patching %.o type 'patterns'
@@ -719,6 +727,12 @@ Find or create L<Make::Target> for given target-name.
 =head2 has_target
 
 Returns boolean on whether the given target-name is known to this object.
+
+=head2 targets
+
+List all "real" (non-dot, non-inference) target-names known to this object
+at the time called, unsorted. Note this might change when C<Make> is
+called, as targets will be added as part of the dependency-search process.
 
 =head2 patrule
 

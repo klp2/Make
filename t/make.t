@@ -191,7 +191,11 @@ for my $tuple ( [ undef, undef ], [ undef, 'subdir' ], [qw(GNUmakefile subdir)] 
     is_deeply $got, [qw(a.o b.o)] or diag explain $got;
     $got = $m->target('a.o')->rules->[0]->prereqs;
     is_deeply $got, ['src/a.c'] or diag explain $got;
+    $got = [ sort $m->targets ];
+    is_deeply $got, [qw(a.o all b.o)], 'targets' or diag explain $got;
     $m->Make('all');
+    $got = [ sort $m->targets ];
+    is_deeply $got, [qw(a.o all b.c b.o src/a.c)], 'targets after' or diag explain $got;
     $contents = do { local $/; open my $fh, '<', $tempfile; <$fh> };
     is $contents, "COMPILE -c -o a.o src/a.c\nCOMPILE -c -o b.o b.c\n";
 }
