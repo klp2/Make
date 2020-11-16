@@ -718,7 +718,7 @@ Find or create L<Make::Target> for given target-name.
 
 =head2 has_target
 
-Find L<Make::Target> for given target-name, or undef.
+Returns boolean on whether the given target-name is known to this object.
 
 =head2 patrule
 
