@@ -219,7 +219,7 @@ sub make_fsmap {
         },
         fh_open => sub {
             require Carp;
-            Carp::croak "@_: No such file or directory" unless exists $vfs_copy{ $_[1] };
+            Carp::confess "open @_: No such file or directory" unless exists $vfs_copy{ $_[1] };
             my $file_tuple = $vfs_copy{ $_[1] };
             open my $fh, "+$_[0]", \$file_tuple->[1];
             $fh2file_tuple{$fh} = $file_tuple;

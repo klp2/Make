@@ -23,8 +23,8 @@ my $DEFAULTS_AST;
 my %date;
 my %fs_function_map = (
     glob          => sub { glob $_[0] },
-    fh_open       => sub { open my $fh, $_[0], $_[1] or die "open @_: $!"; $fh },
-    fh_write      => sub { my $fh = shift;                                 print {$fh} @_ },
+    fh_open       => sub { open my $fh, $_[0], $_[1] or confess "open @_: $!"; $fh },
+    fh_write      => sub { my $fh = shift;                                     print {$fh} @_ },
     file_readable => sub { -r $_[0] },
     mtime         => sub { ( stat $_[0] )[9] },
 );
