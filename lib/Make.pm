@@ -98,7 +98,9 @@ sub patmatch {
 
 sub in_dir {
     my ( $file, $dir ) = @_;
-    defined $dir ? "$dir/$file" : $file;
+    ## no critic ( BuiltinFunctions::RequireBlockGrep )
+    join '/', grep defined, $dir, $file;
+    ## use critic
 }
 
 sub locate {
@@ -438,14 +440,14 @@ sub find_makefile {
 
 sub parse {
     my ( $self, $file ) = @_;
-    $file = find_makefile $file, $self->{GNU} ? ['GNUmakefile'] : [], $self->fsmap, $self->{InDir};
     my $fh;
     if ( ref $file eq 'SCALAR' ) {
         open my $tfh, "+<", $file;
         $fh = $tfh;
     }
     else {
-        $fh = $self->fsmap->{fh_open}->( '<', $file );
+        $file = find_makefile $file, $self->{GNU} ? ['GNUmakefile'] : [], $self->fsmap, $self->{InDir};
+        $fh   = $self->fsmap->{fh_open}->( '<', $file );
     }
     my $ast = parse_makefile($fh);
     $self->process_ast_bit(@$_) for @$ast;
