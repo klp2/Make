@@ -426,12 +426,18 @@ sub pseudos {
 }
 
 sub find_makefile {
-    my ( $file, $extra_names, $fsmap, $dir ) = @_;
+    my ( $self, $file, $dir ) = @_;
+    ## no critic ( BuiltinFunctions::RequireBlockGrep )
+    my @dirs = grep defined, $self->{InDir}, $dir;
+    $dir = join '/', @dirs if @dirs;
+    ## use critic
     return in_dir $file, $dir if defined $file;
-    my @search = ( qw(makefile Makefile), @{ $extra_names || [] } );
+    my @search = qw(makefile Makefile);
+    unshift @search, 'GNUmakefile' if $self->{GNU};
     ## no critic (BuiltinFunctions::RequireBlockMap)
     @search = map in_dir( $_, $dir ), @search;
     ## use critic
+    my $fsmap = $self->fsmap;
     for (@search) {
         return $_ if $fsmap->{file_readable}->($_);
     }
@@ -446,7 +452,7 @@ sub parse {
         $fh = $tfh;
     }
     else {
-        $file = find_makefile $file, $self->{GNU} ? ['GNUmakefile'] : [], $self->fsmap, $self->{InDir};
+        $file = $self->find_makefile($file);
         $fh   = $self->fsmap->{fh_open}->( '<', $file );
     }
     my $ast = parse_makefile($fh);
