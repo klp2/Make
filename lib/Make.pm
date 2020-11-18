@@ -367,7 +367,7 @@ sub parse_makefile {
         elsif (/^\s*([\w._]+)\s*:?=\s*(.*)$/) {
             push @ast, [ 'var', $1, $2 ];
         }
-        elsif (/^vpath\s+(\S+)\s+(.*)$/) {
+        elsif (/^vpath\s+(\S+)\s+([^#]*)/) {
             my ( $pattern, $path ) = ( $1, $2 );
             my @path = @{ tokenize $path, $Config{path_sep} };
             push @ast, [ 'vpath', $pattern, @path ];
