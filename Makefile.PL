@@ -27,6 +27,14 @@ my %WriteMakefileArgs = (
                     "Perl::Tidy"          => "20200822",    # new formatting
                 },
             },
+            test => {
+                requires => {
+                    'Test::More' => '0.82',                 # explain
+                },
+                recommends => {
+                    'App::Prove' => '3.00',                 # prove -j4
+                },
+            },
         },
         resources => {
             bugtracker => { web => 'https://github.com/klp2/Make/issues' },
