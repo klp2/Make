@@ -111,6 +111,10 @@ for my $l (@CMDs) {
     is_deeply $got, $expected;
 }
 
+my @NAME_DATA = ( [ [], '' ], [ [qw(node a:l%l)], 'node:a%3al%25l' ], );
+is Make::name_encode( $_->[0] ),        $_->[1], "enc to $_->[1]" for @NAME_DATA;
+is_deeply Make::name_decode( $_->[1] ), $_->[0], "dec $_->[1]"    for @NAME_DATA;
+
 SKIP: {
     skip '', 2 if !$ENV{AUTHOR_TESTING};    # avoid blowing up on dmake
     my $m = Make->new;

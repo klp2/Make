@@ -496,6 +496,31 @@ sub parse_cmdline {
     return \%parsed;
 }
 
+## no critic (BuiltinFunctions::RequireBlockMap)
+my %NAME_QUOTING     = map +( $_ => sprintf "%%%02x", ord $_ ), qw(% :);
+my $NAME_QUOTE_CHARS = join '', '[', ( map quotemeta, sort keys %NAME_QUOTING ), ']';
+
+sub name_encode {
+    join ':', map {
+        my $s = $_;
+        $s =~ s/($NAME_QUOTE_CHARS)/$NAME_QUOTING{$1}/gs;
+        $s
+    } @{ $_[0] };
+}
+
+sub name_decode {
+    my ($s) = @_;
+    [
+        map {
+            my $s = $_;
+            $s =~ s/%(..)/chr hex $1/ges;
+            $s
+        } split ':',
+        $_[0]
+    ];
+}
+## use critic
+
 ## no critic (Subroutines::ProhibitBuiltinHomonyms)
 sub exec {
     my ( $self, $line ) = @_;
@@ -776,6 +801,16 @@ Returns an array-ref of the packages to search for macro functions.
 Returns a hash-ref of the L</FSFunctionMap>.
 
 =head1 FUNCTIONS
+
+=head2 name_encode
+
+=head2 name_decode
+
+    my $encoded = Make::name_encode([ 'target', 'all' ]);
+    my $tuple = Make::name_decode($encoded); # [ 'target', 'all' ]
+
+Uses C<%>-encoding and -decoding to allow C<%> and C<:> characters in
+components without problems.
 
 =head2 parse_makefile
 
