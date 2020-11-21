@@ -1,5 +1,6 @@
 - more accurate deps version
 - name_encode and name_decode
+- as_graph method
 
 2.007 2020-11-18
 - add Rule.recipe_raw

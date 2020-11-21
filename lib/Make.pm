@@ -556,6 +556,39 @@ sub parse_args {
 }
 ## use critic
 
+sub as_graph {
+    my ($self) = @_;
+    require Graph;
+    my $g = Graph->new;
+    my %recipe_cache;
+    for my $target ( sort $self->targets ) {
+        my $node_name = name_encode( [ 'target', $target ] );
+        $g->add_vertex($node_name);
+        my $make_target = $self->target($target);
+        my $rule_no     = 0;
+        for my $rule ( @{ $make_target->rules } ) {
+            my $recipe = $rule->recipe;
+            my $rule_id
+                = $recipe_cache{$recipe} || ( $recipe_cache{$recipe} = name_encode( [ 'rule', $target, $rule_no ] ) );
+            $g->set_vertex_attributes(
+                $rule_id,
+                {
+                    recipe     => $recipe,
+                    recipe_raw => $rule->recipe_raw,
+                }
+            );
+            $g->add_edge( $node_name, $rule_id );
+            for my $dep ( @{ $rule->prereqs } ) {
+                my $dep_node = name_encode( [ 'target', $dep ] );
+                $g->add_vertex($dep_node);
+                $g->add_edge( $rule_id, $dep_node );
+            }
+            $rule_no++;
+        }
+    }
+    return $g;
+}
+
 sub apply {
     my ( $self, $method, @args ) = @_;
     $self->NextPass;
@@ -799,6 +832,25 @@ Returns an array-ref of the packages to search for macro functions.
 =head2 fsmap
 
 Returns a hash-ref of the L</FSFunctionMap>.
+
+=head2 as_graph
+
+Returns a L<Graph::Directed> object representing the makefile. The
+vertices are named either C<target:name> (representing L<Make::Target>s)
+or C<rule:name:rule_index> (representing L<Make::Rule>s). The names
+encoded with L</name_encode>. Rules are named according to the first
+(alphabetically) target they are attached to.
+
+The rule vertices have attributes with the same values as the
+L<Make::Rule> attributes:
+
+=over
+
+=item recipe
+
+=item recipe_raw
+
+=back
 
 =head1 FUNCTIONS
 
