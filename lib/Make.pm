@@ -472,7 +472,7 @@ sub parse {
 
     $self->pseudos;     # Pull out .SUFFIXES etc.
     $self->dotrules;    # Convert .c.o into %.o : %.c
-    return;
+    return $self;
 }
 
 sub PrintVars {
@@ -662,8 +662,7 @@ Make - Pure-Perl implementation of a somewhat GNU-like make.
 
     require Make;
     my $make = Make->new;
-    $make->parse($file);
-    $make->Make(@ARGV);
+    $make->parse($file)->Make(@ARGV);
 
     # to see what it would have done
     print $make->Script(@ARGV);
@@ -768,6 +767,8 @@ Parses the given makefile. If none or C<undef>, these files will be tried,
 in order: F<GNUmakefile> if L</GNU>, F<makefile>, F<Makefile>.
 
 If a scalar-ref, will be makefile text.
+
+Returns the make object for chaining.
 
 =head2 Make
 

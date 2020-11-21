@@ -1,3 +1,5 @@
+- parse returns self for chaining
+
 2.008 2020-11-21
 - more accurate deps version
 - name_encode and name_decode
