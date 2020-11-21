@@ -1,4 +1,5 @@
 - parse returns self for chaining
+- find_recursive_makes method
 
 2.008 2020-11-21
 - more accurate deps version

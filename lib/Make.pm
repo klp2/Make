@@ -28,6 +28,18 @@ my %fs_function_map = (
     file_readable => sub { -r $_[0] },
     mtime         => sub { ( stat $_[0] )[9] },
 );
+my @RECMAKE_FINDS = ( \&_find_recmake_cd, );
+
+sub _find_recmake_cd {
+    my ($cmd) = @_;
+    return unless $cmd =~ /\bcd\s+([^\s;&]+)\s*(?:;|&&)\s*make\s*(.*)/;
+    my ( $dir, $makeargs ) = ( $1, $2 );
+    require Getopt::Long;
+    local @ARGV = Text::ParseWords::shellwords($makeargs);
+    Getopt::Long::GetOptions( "f=s" => \my $makefile );
+    my ( $vars, $targets ) = parse_args(@ARGV);
+    return ( $dir, $makefile, $vars, $targets );
+}
 
 ## no critic (Subroutines::RequireArgUnpacking Subroutines::RequireFinalReturn)
 sub load_modules {
@@ -556,6 +568,37 @@ sub parse_args {
 }
 ## use critic
 
+sub _rmf_search_rule {
+    my ( $rule, $target_obj, $target, $rule_no, $rmfs ) = @_;
+    my @found;
+    my $line = -1;
+    for my $cmd ( $rule->exp_recipe($target_obj) ) {
+        $line++;
+        my @rec_vars;
+        for my $rf (@$rmfs) {
+            last if @rec_vars = $rf->($cmd);
+        }
+        next unless @rec_vars;
+        push @found, [ $target, $rule_no, $line, @rec_vars ];
+    }
+    return @found;
+}
+
+sub find_recursive_makes {
+    my ($self) = @_;
+    my $g = $self->as_graph;
+    my @found;
+    my $rmfs = $self->{RecursiveMakeFinders};
+    for my $target ( sort $self->targets ) {
+        my $target_obj = $self->target($target);
+        my $rule_no    = 0;
+        ## no critic (BuiltinFunctions::RequireBlockMap)
+        push @found, map _rmf_search_rule( $_, $target_obj, $target, $rule_no++, $rmfs ), @{ $target_obj->rules };
+        ## use critic
+    }
+    return @found;
+}
+
 sub as_graph {
     my ($self) = @_;
     require Graph;
@@ -564,9 +607,8 @@ sub as_graph {
     for my $target ( sort $self->targets ) {
         my $node_name = name_encode( [ 'target', $target ] );
         $g->add_vertex($node_name);
-        my $make_target = $self->target($target);
-        my $rule_no     = 0;
-        for my $rule ( @{ $make_target->rules } ) {
+        my $rule_no = 0;
+        for my $rule ( @{ $self->target($target)->rules } ) {
             my $recipe = $rule->recipe;
             my $rule_id
                 = $recipe_cache{$recipe} || ( $recipe_cache{$recipe} = name_encode( [ 'rule', $target, $rule_no ] ) );
@@ -634,15 +676,16 @@ sub Make {
 sub new {
     my ( $class, %args ) = @_;
     my $self = bless {
-        Pattern          => {},                      # GNU style %.o : %.c
-        Dot              => {},                      # Trad style .c.o
-        Vpath            => {},                      # vpath %.c info
-        Vars             => {},                      # Variables defined in makefile
-        Depend           => {},                      # hash of targets
-        Pass             => 0,                       # incremented each sweep
-        Done             => {},
-        FunctionPackages => [qw(Make::Functions)],
-        FSFunctionMap    => \%fs_function_map,
+        Pattern              => {},                      # GNU style %.o : %.c
+        Dot                  => {},                      # Trad style .c.o
+        Vpath                => {},                      # vpath %.c info
+        Vars                 => {},                      # Variables defined in makefile
+        Depend               => {},                      # hash of targets
+        Pass                 => 0,                       # incremented each sweep
+        Done                 => {},
+        FunctionPackages     => [qw(Make::Functions)],
+        FSFunctionMap        => \%fs_function_map,
+        RecursiveMakeFinders => \@RECMAKE_FINDS,
         %args,
     }, $class;
     $self->set_var( 'CC',     $Config{cc} );
@@ -761,6 +804,22 @@ C<glob>, C<fh_open>, C<fh_write>, C<mtime>.
 Optional. If supplied, will be treated as the current directory instead
 of the default which is the real current directory.
 
+=head3 RecursiveMakeFinders
+
+Array-ref of functions to be called in order, searching an expanded
+recipe line for a recursive make invocation (cf
+L<Recursive Make Considered Harmful|http://www.real-linux.org.uk/recursivemake.pdf>)
+that would run a C<make> in a subdirectory. Each returns either an empty
+list, or
+
+    ($dir, $makefile, $vars, $targets)
+
+The C<$makefile> might be <undef>, in which case the default will be
+searched for. C<$vars> and C<$targets> are array-refs of pairs and
+strings, respectively. The C<$targets> can be empty.
+
+Defaults to a single, somewhat-suitable, function.
+
 =head2 parse
 
 Parses the given makefile. If none or C<undef>, these files will be tried,
@@ -818,6 +877,17 @@ target-name. Returns a L<Make::Rule> for that of the given kind, or false.
 Uses GNU make's "exists or can be made" algorithm on each rule's proposed
 requisite to see if that rule matches.
 
+=head2 find_recursive_makes
+
+    my @found = $make->find_recursive_makes;
+
+Iterate over all the rules, expanding them for their targets, and find
+any recursive make invocations using the L</RecursiveMakeFinders>.
+
+Returns a list of array-refs with:
+
+    [ $from_target, $rule_index, $line_index, $dir, $makefile, $vars, $targets ]
+
 =head1 ATTRIBUTES
 
 These are read-only.
@@ -836,11 +906,11 @@ Returns a hash-ref of the L</FSFunctionMap>.
 
 =head2 as_graph
 
-Returns a L<Graph::Directed> object representing the makefile. The
-vertices are named either C<target:name> (representing L<Make::Target>s)
-or C<rule:name:rule_index> (representing L<Make::Rule>s). The names
-encoded with L</name_encode>. Rules are named according to the first
-(alphabetically) target they are attached to.
+Returns a L<Graph::Directed> object representing the makefile.
+The vertices are named either C<target:name> (representing
+L<Make::Target>s) or C<rule:name:rule_index> (representing
+L<Make::Rule>s). The names encoded with L</name_encode>. Rules are named
+according to the first (alphabetically) target they are attached to.
 
 The rule vertices have attributes with the same values as the
 L<Make::Rule> attributes:

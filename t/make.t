@@ -162,11 +162,17 @@ is_deeply $got, ['other'] or diag explain $got;
 $got = $all_rule->auto_vars($all_target);
 ok exists $got->{'@'}, 'Rules.Vars.EXISTS';
 is_deeply [ keys %$got ], [qw( @ * ^ ? < )] or diag explain $got;
+
+my $recmake_fsmap = make_fsmap(
+    {
+        Makefile                    => [ 1, "MK=make\nall: bar sany\nsany:\n\tcd subdir && \$(MK)\n\tsay hi\n" ],
+        'subdir/Makefile'           => [ 1, "all: sbar sfoo\n\tcd subsubdir && make\n" ],
+        'subdir/subsubdir/Makefile' => [ 1, "all:\n\techo L3\n" ],
+    }
+);
+$m = Make->new( FSFunctionMap => $recmake_fsmap )->parse;
 my $g = $m->as_graph;
-my %e;
-$e{ $_->[0] }{ $_->[1] } = $g->get_edge_attributes(@$_) || {} for $g->edges;
-my %n = map +( $_ => $g->get_vertex_attributes($_) ), $g->vertices;
-$got = [ \%n, \%e ];
+$got = [ graph2hashes($g) ];
 is_deeply $got,
     [
     {
@@ -174,33 +180,40 @@ is_deeply $got,
             'recipe'     => [],
             'recipe_raw' => []
         },
-        'rule:other:0' => {
-            'recipe'     => ['@echo $@ $^ $< $(var) >"$(tempfile)"'],
-            'recipe_raw' => ["\@echo \$@ \$^ \$< \$(var) \\\n   >\"\$(tempfile)\""]
+        'rule:sany:0' => {
+            'recipe'     => [ 'cd subdir && $(MK)', 'say hi' ],
+            'recipe_raw' => [ 'cd subdir && $(MK)', 'say hi' ]
         },
-        'target:Changes' => undef,
-        'target:README'  => undef,
-        'target:all'     => undef,
-        'target:other'   => undef
+        'target:all'  => {},
+        'target:bar'  => {},
+        'target:sany' => {}
     },
     {
         'rule:all:0' => {
-            'target:other' => {}
-        },
-        'rule:other:0' => {
-            'target:Changes' => {},
-            'target:README'  => {}
+            'target:bar'  => {},
+            'target:sany' => {}
         },
         'target:all' => {
             'rule:all:0' => {}
         },
-        'target:other' => {
-            'rule:other:0' => {}
+        'target:sany' => {
+            'rule:sany:0' => {}
         }
     }
     ],
-    'graph'
+    'shallow graph'
     or diag explain $got;
+$got = [ $m->find_recursive_makes ];
+is_deeply $got, [ [ 'sany', 0, 0, 'subdir', undef, [], [] ] ], 'find_recursive_makes'
+    or diag explain $got;
+
+sub graph2hashes {
+    my ($g) = @_;
+    my %e;
+    $e{ $_->[0] }{ $_->[1] } = $g->get_edge_attributes(@$_) || {} for $g->edges;
+    my %n = map +( $_ => $g->get_vertex_attributes($_) || {} ), $g->vertices;
+    ( \%n, \%e );
+}
 
 $m = Make->new;
 $m->parse( \sprintf <<'EOF', $tempfile, $^X );
