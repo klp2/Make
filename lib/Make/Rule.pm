@@ -8,7 +8,7 @@ use Make::Rule::Vars;
 use constant DEBUG => $ENV{MAKE_DEBUG};
 ## use critic
 
-our $VERSION = '2.007';
+our $VERSION = '2.008';
 
 sub prereqs {
     return shift->{PREREQS};
