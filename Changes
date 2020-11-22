@@ -1,6 +1,7 @@
 - parse returns self for chaining
 - find_recursive_makes method
 - as_graph recursive_make, no_rules options
+- --analyse-redundancy flag for script
 
 2.008 2020-11-21
 - more accurate deps version
