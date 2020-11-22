@@ -70,6 +70,8 @@ sub new {
         if 'ARRAY' ne ref $prereqs;
     confess "recipe $recipe not an array reference"
         if 'ARRAY' ne ref $recipe;
+    confess "recipe but no recipe_raw"
+        if $recipe and not $recipe_raw;
     return bless {
         KIND       => $kind,         # : or ::
         PREREQS    => $prereqs,      # right hand args
@@ -121,7 +123,7 @@ Make::Rule - a rule with prerequisites and recipe
 
 =head1 SYNOPSIS
 
-    my $rule = Make::Rule->new( $kind, \@prereqs, \@recipe );
+    my $rule = Make::Rule->new( $kind, \@prereqs, \@recipe, \@recipe_raw );
     my @name_commands = $rule->Make($target);
     my @deps = @{ $rule->prereqs };
     my @cmds = @{ $rule->recipe };

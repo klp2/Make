@@ -226,6 +226,100 @@ $got = [ $m->find_recursive_makes ];
 is_deeply $got, [ [ 'sany', 0, 0, 'subdir', undef, [], [] ] ], 'find_recursive_makes'
     or diag explain $got;
 
+$g   = $m->as_graph( recursive_make => 1 );
+$got = [ graph2hashes($g) ];
+is_deeply $got,
+    [
+    {
+        'rule:all:0' => {
+            'recipe'     => [],
+            'recipe_raw' => []
+        },
+        'rule:sany:0' => {
+            'recipe'     => [ 'cd subdir && $(MK)', 'say hi' ],
+            'recipe_raw' => [ 'cd subdir && $(MK)', 'say hi' ]
+        },
+        'rule:subdir/all:0' => {
+            'recipe'     => ['cd subsubdir && make'],
+            'recipe_raw' => ['cd subsubdir && make']
+        },
+        'rule:subdir/subsubdir/all:0' => {
+            'recipe'     => ['echo L3'],
+            'recipe_raw' => ['echo L3']
+        },
+        'target:all'                  => {},
+        'target:bar'                  => {},
+        'target:sany'                 => {},
+        'target:subdir/all'           => {},
+        'target:subdir/sbar'          => {},
+        'target:subdir/sfoo'          => {},
+        'target:subdir/subsubdir/all' => {}
+    },
+    {
+        'rule:all:0' => {
+            'target:bar'  => {},
+            'target:sany' => {}
+        },
+        'rule:sany:0' => {
+            'target:subdir/all' => {
+                'fromline' => 0
+            }
+        },
+        'rule:subdir/all:0' => {
+            'target:subdir/sbar'          => {},
+            'target:subdir/sfoo'          => {},
+            'target:subdir/subsubdir/all' => {
+                'fromline' => 0
+            }
+        },
+        'target:all' => {
+            'rule:all:0' => {}
+        },
+        'target:sany' => {
+            'rule:sany:0' => {}
+        },
+        'target:subdir/all' => {
+            'rule:subdir/all:0' => {}
+        },
+        'target:subdir/subsubdir/all' => {
+            'rule:subdir/subsubdir/all:0' => {}
+        }
+    }
+    ],
+    'recursive_make graph'
+    or diag explain $got;
+
+$g   = $m->as_graph( recursive_make => 1, no_rules => 1 );
+$got = [ graph2hashes($g) ];
+is_deeply $got,
+    [
+    {
+        'all'                  => {},
+        'bar'                  => {},
+        'sany'                 => {},
+        'subdir/all'           => {},
+        'subdir/sbar'          => {},
+        'subdir/sfoo'          => {},
+        'subdir/subsubdir/all' => {},
+    },
+    {
+        'all' => {
+            'bar'  => {},
+            'sany' => {},
+        },
+        'sany' => {
+            'subdir/all' => {},
+        },
+        'subdir/all' => {
+            'subdir/subsubdir/all' => {},
+            'subdir/sbar'          => {},
+            'subdir/sfoo'          => {},
+        },
+    }
+    ],
+    'recursive_make+no_rules graph'
+    or diag explain $got;
+
 sub graph2hashes {
     my ($g) = @_;
     my %e;

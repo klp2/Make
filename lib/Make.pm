@@ -142,7 +142,7 @@ sub dotrules {
             my $thisrule = $r->rules->[-1];             # last-specified
             die "Failed on pattern rule for '$f$t', no prereqs allowed"
                 if @{ $thisrule->prereqs };
-            my $rule = Make::Rule->new( '::', [ '%' . $f ], $thisrule->recipe );
+            my $rule = Make::Rule->new( '::', [ '%' . $f ], $thisrule->recipe, $thisrule->recipe_raw );
             $self->target( '%' . $t )->add_rule($rule);
         }
     }
@@ -189,7 +189,7 @@ sub patrule {
             }
             DEBUG and print STDERR "  " . ( @failed ? "Failed: (@failed)" : "Matched (@dep)" ) . "\n";
             next if @failed;
-            return Make::Rule->new( $kind, \@dep, $rule->recipe );
+            return Make::Rule->new( $kind, \@dep, $rule->recipe, $rule->recipe_raw );
         }
     }
     return;
@@ -599,17 +599,37 @@ sub find_recursive_makes {
     return @found;
 }
 
+sub _graph_ingest {
+    my ( $g, $g2 ) = @_;
+    for my $v ( $g2->vertices ) {
+        $g->set_vertex_attributes( $v, $g2->get_vertex_attributes($v) );
+        $g->set_edge_attributes( @$_, $g2->get_edge_attributes(@$_) ) for $g2->edges_from($v);
+    }
+    return;
+}
+
 sub as_graph {
     my ( $self,     %options )        = @_;
     my ( $no_rules, $recursive_make ) = @options{qw(no_rules recursive_make)};
     require Graph;
     my $g = Graph->new;
-    my %recipe_cache;
+    my ( %recipe_cache, %seen );
+    my $rmfs      = $self->{RecursiveMakeFinders};
+    my $fsmap     = $self->fsmap;
+    my $fr        = $fsmap->{file_readable};
+    my %make_args = (
+        FunctionPackages => $self->function_packages,
+        FSFunctionMap    => $fsmap,
+    );
+    my $InDir = $self->{InDir};
+
     for my $target ( sort $self->targets ) {
         my $node_name = $no_rules ? $target : name_encode( [ 'target', $target ] );
         $g->add_vertex($node_name);
-        my $rule_no = 0;
-        for my $rule ( @{ $self->target($target)->rules } ) {
+        my $rule_no    = -1;
+        my $target_obj = $self->target($target);
+        for my $rule ( @{ $target_obj->rules } ) {
+            $rule_no++;
             my $recipe = $rule->recipe;
             my $from_id;
             if ($no_rules) {
@@ -632,7 +652,42 @@ sub as_graph {
                 $g->add_vertex($dep_node);
                 $g->add_edge( $from_id, $dep_node );
             }
-            $rule_no++;
+            next if !$recursive_make;
+            for my $t ( _rmf_search_rule( $rule, $target_obj, $target, $rule_no, $rmfs ) ) {
+                my ( undef, $rule_index, $line, $dir, $makefile, $vars, $targets ) = @$t;
+                my $from           = $no_rules ? $target : name_encode( [ 'rule', $target, $rule_index ] );
+                my $indir_makefile = $self->find_makefile( $makefile, $dir );
+                next unless $indir_makefile && $fr->($indir_makefile);
+                ## no critic (BuiltinFunctions::RequireBlockMap)
+                my $cache_key = join ' ', $indir_makefile, sort map join( '=', @$_ ), @$vars;
+                ## use critic
+                if ( !$seen{$cache_key}++ ) {
+                    my $make2 = ref($self)->new( %make_args, InDir => in_dir( $dir, $InDir ), );
+                    $make2->parse($makefile);
+                    $make2->set_var(@$_) for @$vars;
+                    $targets = [ $make2->{Vars}{'.DEFAULT_GOAL'} ] unless @$targets;
+                    my $g2 = $make2->as_graph(%options);
+                    $g2->rename_vertices(
+                        sub {
+                            return "$dir/$_[0]" if $no_rules;
+                            my ( $type, $name, @other ) = @{ name_decode( $_[0] ) };
+                            name_encode( [ $type, "$dir/$name", @other ] );
+                        }
+                    );
+                    _graph_ingest( $g, $g2 );
+                }
+                if ($no_rules) {
+                    ## no critic (BuiltinFunctions::RequireBlockMap)
+                    $g->add_edge( $from, $_ ) for map "$dir/$_", @$targets;
+                    ## use critic
+                }
+                else {
+                    ## no critic (BuiltinFunctions::RequireBlockMap)
+                    $g->set_edge_attribute( $from, $_, fromline => $line )
+                        for map name_encode( [ 'target', "$dir/$_" ] ), @$targets;
+                    ## use critic
+                }
+            }
         }
     }
     return $g;
@@ -721,7 +776,7 @@ Make - Pure-Perl implementation of a somewhat GNU-like make.
     $make->Print(@ARGV);
 
     my $targ = $make->target($name);
-    my $rule = Make::Rule->new(':', \@prereqs, \@recipe);
+    my $rule = Make::Rule->new(':', \@prereqs, \@recipe, \@recipe_raw);
     $targ->add_rule($rule);
     my @rules = @{ $targ->rules };
 
@@ -915,6 +970,12 @@ Returns a hash-ref of the L</FSFunctionMap>.
 
 Returns a L<Graph::Directed> object representing the makefile.
 Takes options as a hash:
+
+=head3 recursive_make
+
+If true (default false), uses L</RecursiveMakeFinders> to find recursive
+make invocations in the current makefile, parses those, then includes
+them, with an edge created to the relevant target.
 
 =head3 no_rules
 
