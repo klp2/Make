@@ -2,32 +2,39 @@
 use strict;
 use warnings;
 
-use 5.005;    # Need look-behind assertions
-
-use Getopt::Std;
+use Getopt::Long;
 use Make;
 
 my %opt;
 
-getopts( 'Dgnpf:j:C:', \%opt );
+if (!GetOptions(
+    ## no critic (BuiltinFunctions::RequireBlockMap)
+    (map +("$_!" => \$opt{$_}), qw(D g n p)),
+    (map +("$_=s" => \$opt{$_}), qw(f C)),
+    (map +("$_=i" => \$opt{$_}), qw(j)),
+    ## use critic
+)) {
+    require Pod::Usage;
+    Pod::Usage::pod2usage(1);
+}
 
 chdir $opt{C} if $opt{C};
 
 my $info = Make->new(
-    GNU      => $opt{'g'},
+    GNU      => $opt{g},
     Vars     => { MAKE => "$^X $0" },
-    Jobs     => $opt{'j'},
+    Jobs     => $opt{j},
 );
-$info->parse($opt{'f'});
+$info->parse($opt{f});
 
-if ( $opt{'D'} ) {
+if ( $opt{D} ) {
     require Data::Dumper;
     print Data::Dumper::DumperX($info);
 }
-elsif ( $opt{'p'} ) {
+elsif ( $opt{p} ) {
     $info->Print(@ARGV);
 }
-elsif ( $opt{'n'} ) {
+elsif ( $opt{n} ) {
     print $info->Script(@ARGV);
 }
 else {
@@ -73,8 +80,6 @@ Turn on L<Make/GNU>.
 =item *
 
 No B<-k> flag
-
-I strongly suspect there are lots more.
 
 =back
 
