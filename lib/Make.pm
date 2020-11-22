@@ -600,30 +600,37 @@ sub find_recursive_makes {
 }
 
 sub as_graph {
-    my ($self) = @_;
+    my ( $self,     %options )        = @_;
+    my ( $no_rules, $recursive_make ) = @options{qw(no_rules recursive_make)};
     require Graph;
     my $g = Graph->new;
     my %recipe_cache;
     for my $target ( sort $self->targets ) {
-        my $node_name = name_encode( [ 'target', $target ] );
+        my $node_name = $no_rules ? $target : name_encode( [ 'target', $target ] );
         $g->add_vertex($node_name);
         my $rule_no = 0;
         for my $rule ( @{ $self->target($target)->rules } ) {
             my $recipe = $rule->recipe;
-            my $rule_id
-                = $recipe_cache{$recipe} || ( $recipe_cache{$recipe} = name_encode( [ 'rule', $target, $rule_no ] ) );
-            $g->set_vertex_attributes(
-                $rule_id,
-                {
-                    recipe     => $recipe,
-                    recipe_raw => $rule->recipe_raw,
-                }
-            );
-            $g->add_edge( $node_name, $rule_id );
+            my $from_id;
+            if ($no_rules) {
+                $from_id = $node_name;
+            }
+            else {
+                $from_id = $recipe_cache{$recipe}
+                    || ( $recipe_cache{$recipe} = name_encode( [ 'rule', $target, $rule_no ] ) );
+                $g->set_vertex_attributes(
+                    $from_id,
+                    {
+                        recipe     => $recipe,
+                        recipe_raw => $rule->recipe_raw,
+                    }
+                );
+                $g->add_edge( $node_name, $from_id );
+            }
             for my $dep ( @{ $rule->prereqs } ) {
-                my $dep_node = name_encode( [ 'target', $dep ] );
+                my $dep_node = $no_rules ? $dep : name_encode( [ 'target', $dep ] );
                 $g->add_vertex($dep_node);
-                $g->add_edge( $rule_id, $dep_node );
+                $g->add_edge( $from_id, $dep_node );
             }
             $rule_no++;
         }
@@ -907,8 +914,14 @@ Returns a hash-ref of the L</FSFunctionMap>.
 =head2 as_graph
 
 Returns a L<Graph::Directed> object representing the makefile.
-The vertices are named either C<target:name> (representing
-L<Make::Target>s) or C<rule:name:rule_index> (representing
+Takes options as a hash:
+
+=head3 no_rules
+
+If true, the graph will only have target vertices.
+
+If false (the default), the vertices are named either C<target:name>
+(representing L<Make::Target>s) or C<rule:name:rule_index> (representing
 L<Make::Rule>s). The names encoded with L</name_encode>. Rules are named
 according to the first (alphabetically) target they are attached to.
 

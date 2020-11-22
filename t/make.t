@@ -171,7 +171,26 @@ my $recmake_fsmap = make_fsmap(
     }
 );
 $m = Make->new( FSFunctionMap => $recmake_fsmap )->parse;
-my $g = $m->as_graph;
+my $g = $m->as_graph( no_rules => 1 );
+$got = [ graph2hashes($g) ];
+is_deeply $got,
+    [
+    {
+        'all'  => {},
+        'bar'  => {},
+        'sany' => {}
+    },
+    {
+        'all' => {
+            'bar'  => {},
+            'sany' => {}
+        },
+    }
+    ],
+    'no_rules graph'
+    or diag explain $got;
+
+$g   = $m->as_graph;
 $got = [ graph2hashes($g) ];
 is_deeply $got,
     [
