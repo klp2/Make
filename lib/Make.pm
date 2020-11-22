@@ -599,15 +599,6 @@ sub find_recursive_makes {
     return @found;
 }
 
-sub _graph_ingest {
-    my ( $g, $g2 ) = @_;
-    for my $v ( $g2->vertices ) {
-        $g->set_vertex_attributes( $v, $g2->get_vertex_attributes($v) );
-        $g->set_edge_attributes( @$_, $g2->get_edge_attributes(@$_) ) for $g2->edges_from($v);
-    }
-    return;
-}
-
 sub as_graph {
     my ( $self,     %options )        = @_;
     my ( $no_rules, $recursive_make ) = @options{qw(no_rules recursive_make)};
@@ -674,7 +665,7 @@ sub as_graph {
                             name_encode( [ $type, "$dir/$name", @other ] );
                         }
                     );
-                    _graph_ingest( $g, $g2 );
+                    $g->ingest($g2);
                 }
                 if ($no_rules) {
                     ## no critic (BuiltinFunctions::RequireBlockMap)

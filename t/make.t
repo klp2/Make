@@ -172,7 +172,7 @@ my $recmake_fsmap = make_fsmap(
 );
 $m = Make->new( FSFunctionMap => $recmake_fsmap )->parse;
 my $g = $m->as_graph( no_rules => 1 );
-$got = [ graph2hashes($g) ];
+$got = [ $g->as_hashes ];
 is_deeply $got,
     [
     {
@@ -191,7 +191,7 @@ is_deeply $got,
     or diag explain $got;
 
 $g   = $m->as_graph;
-$got = [ graph2hashes($g) ];
+$got = [ $g->as_hashes ];
 is_deeply $got,
     [
     {
@@ -227,7 +227,7 @@ is_deeply $got, [ [ 'sany', 0, 0, 'subdir', undef, [], [] ] ], 'find_recursive_m
     or diag explain $got;
 
 $g   = $m->as_graph( recursive_make => 1 );
-$got = [ graph2hashes($g) ];
+$got = [ $g->as_hashes ];
 is_deeply $got,
     [
     {
@@ -290,7 +290,7 @@ is_deeply $got,
     or diag explain $got;
 
 $g   = $m->as_graph( recursive_make => 1, no_rules => 1 );
-$got = [ graph2hashes($g) ];
+$got = [ $g->as_hashes ];
 is_deeply $got,
     [
     {
@@ -319,14 +319,6 @@ is_deeply $got,
     ],
     'recursive_make+no_rules graph'
     or diag explain $got;
-
-sub graph2hashes {
-    my ($g) = @_;
-    my %e;
-    $e{ $_->[0] }{ $_->[1] } = $g->get_edge_attributes(@$_) || {} for $g->edges;
-    my %n = map +( $_ => $g->get_vertex_attributes($_) || {} ), $g->vertices;
-    ( \%n, \%e );
-}
 
 $m = Make->new;
 $m->parse( \sprintf <<'EOF', $tempfile, $^X );
