@@ -113,9 +113,15 @@ sub patmatch {
 sub in_dir {
     my ( $fsmap, $dir, $file ) = @_;
     return $file if defined $file and $fsmap->{is_abs}->($file);
-    ## no critic ( BuiltinFunctions::RequireBlockGrep )
-    join '/', grep defined, $dir, $file;
-    ## use critic
+    my @dir  = defined($dir) ? split /\//, $dir : ();
+    my @file = split /\//, $file;
+    while ( @dir and @file and $file[0] eq '..' ) {
+
+        # normalise out ../ in $file - no account taken of symlinks
+        shift @file;
+        pop @dir;
+    }
+    join '/', @dir, @file;
 }
 
 sub locate {

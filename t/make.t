@@ -166,7 +166,7 @@ is_deeply [ keys %$got ], [qw( @ * ^ ? < )] or diag explain $got;
 my $recmake_fsmap = make_fsmap(
     {
         Makefile                    => [ 1, "MK=make\nall: bar sany\nsany:\n\tcd subdir && \$(MK)\n\tsay hi\n" ],
-        'subdir/Makefile'           => [ 1, "all: sbar sfoo\n\tcd subsubdir && make\n" ],
+        'subdir/Makefile'           => [ 1, "all: sbar sfoo ../first\n\tcd subsubdir && make\n" ],
         'subdir/subsubdir/Makefile' => [ 1, "all: /top/level\n\techo L3\n" ],
     }
 );
@@ -250,6 +250,7 @@ is_deeply $got,
         'target:/top/level'           => {},
         'target:all'                  => {},
         'target:bar'                  => {},
+        'target:first'                => {},
         'target:sany'                 => {},
         'target:subdir/all'           => {},
         'target:subdir/sbar'          => {},
@@ -267,6 +268,7 @@ is_deeply $got,
             }
         },
         'rule:subdir/all:0' => {
+            'target:first'                => {},
             'target:subdir/sbar'          => {},
             'target:subdir/sfoo'          => {},
             'target:subdir/subsubdir/all' => {
@@ -300,6 +302,7 @@ is_deeply $got,
     {
         'all'                  => {},
         'bar'                  => {},
+        'first'                => {},
         'sany'                 => {},
         'subdir/all'           => {},
         'subdir/sbar'          => {},
@@ -319,6 +322,7 @@ is_deeply $got,
             'subdir/subsubdir/all' => {},
             'subdir/sbar'          => {},
             'subdir/sfoo'          => {},
+            'first'                => {},
         },
         'subdir/subsubdir/all' => {
             '/top/level' => {},
