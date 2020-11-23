@@ -109,7 +109,7 @@ sub patmatch {
 }
 
 sub in_dir {
-    my ( $file, $dir ) = @_;
+    my ( $fsmap, $dir, $file ) = @_;
     ## no critic ( BuiltinFunctions::RequireBlockGrep )
     join '/', grep defined, $dir, $file;
     ## use critic
@@ -117,12 +117,13 @@ sub in_dir {
 
 sub locate {
     my ( $self, $file ) = @_;
-    my $readable = $self->fsmap->{file_readable};
+    my $fsmap    = $self->fsmap;
+    my $readable = $fsmap->{file_readable};
     foreach my $key ( sort keys %{ $self->{Vpath} } ) {
         next unless defined( my $Pat = patmatch( $key, $file ) );
         foreach my $dir ( @{ $self->{Vpath}{$key} } ) {
             ( my $maybe_file = $dir ) =~ s/%/$Pat/g;
-            return $maybe_file if $readable->( in_dir $maybe_file, $self->{InDir} );
+            return $maybe_file if $readable->( in_dir $fsmap, $self->{InDir}, $maybe_file );
         }
     }
     return;
@@ -154,8 +155,9 @@ sub dotrules {
 #
 sub date {
     my ( $self, $name ) = @_;
+    my $fsmap = $self->fsmap;
     unless ( exists $date{$name} ) {
-        $date{$name} = $self->fsmap->{mtime}->( in_dir $name, $self->{InDir} );
+        $date{$name} = $self->fsmap->{mtime}->( in_dir $fsmap, $self->{InDir}, $name );
     }
     return $date{$name};
 }
@@ -333,8 +335,9 @@ sub process_ast_bit {
         my ($tokens) = tokenize( $self->expand( $args[1] ) );
         foreach my $file (@$tokens) {
             eval {
-                $file = in_dir $file, $self->{InDir};
-                my $mf  = $self->fsmap->{fh_open}->( '<', $file );
+                my $fsmap = $self->fsmap;
+                $file = in_dir $fsmap, $self->{InDir}, $file;
+                my $mf  = $fsmap->{fh_open}->( '<', $file );
                 my $ast = parse_makefile($mf);
                 close($mf);
                 $self->process_ast_bit(@$_) for @$ast;
@@ -452,13 +455,13 @@ sub find_makefile {
     my @dirs = grep defined, $self->{InDir}, $dir;
     $dir = join '/', @dirs if @dirs;
     ## use critic
-    return in_dir $file, $dir if defined $file;
+    my $fsmap = $self->fsmap;
+    return in_dir $fsmap, $dir, $file if defined $file;
     my @search = qw(makefile Makefile);
     unshift @search, 'GNUmakefile' if $self->{GNU};
     ## no critic (BuiltinFunctions::RequireBlockMap)
-    @search = map in_dir( $_, $dir ), @search;
+    @search = map in_dir( $fsmap, $dir, $_ ), @search;
     ## use critic
-    my $fsmap = $self->fsmap;
     for (@search) {
         return $_ if $fsmap->{file_readable}->($_);
     }
@@ -653,7 +656,7 @@ sub as_graph {
                 my $cache_key = join ' ', $indir_makefile, sort map join( '=', @$_ ), @$vars;
                 ## use critic
                 if ( !$seen{$cache_key}++ ) {
-                    my $make2 = ref($self)->new( %make_args, InDir => in_dir( $dir, $InDir ), );
+                    my $make2 = ref($self)->new( %make_args, InDir => in_dir( $fsmap, $InDir, $dir ) );
                     $make2->parse($makefile);
                     $make2->set_var(@$_) for @$vars;
                     $targets = [ $make2->{Vars}{'.DEFAULT_GOAL'} ] unless @$targets;
