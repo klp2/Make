@@ -14,6 +14,7 @@ use Make::Rule   ();
 use File::Temp;
 use Text::Balanced qw(extract_bracketed);
 use Text::ParseWords qw(parse_line);
+use File::Spec::Functions qw(file_name_is_absolute);
 ## no critic (ValuesAndExpressions::ProhibitConstantPragma)
 use constant DEBUG => $ENV{MAKE_DEBUG};
 ## use critic
@@ -27,6 +28,7 @@ my %fs_function_map = (
     fh_write      => sub { my $fh = shift;                                     print {$fh} @_ },
     file_readable => sub { -r $_[0] },
     mtime         => sub { ( stat $_[0] )[9] },
+    is_abs        => sub { goto &file_name_is_absolute },
 );
 my @RECMAKE_FINDS = ( \&_find_recmake_cd, );
 
@@ -110,6 +112,7 @@ sub patmatch {
 
 sub in_dir {
     my ( $fsmap, $dir, $file ) = @_;
+    return $file if defined $file and $fsmap->{is_abs}->($file);
     ## no critic ( BuiltinFunctions::RequireBlockGrep )
     join '/', grep defined, $dir, $file;
     ## use critic
@@ -663,9 +666,9 @@ sub as_graph {
                     my $g2 = $make2->as_graph(%options);
                     $g2->rename_vertices(
                         sub {
-                            return "$dir/$_[0]" if $no_rules;
+                            return in_dir( $fsmap, $dir, $_[0] ) if $no_rules;
                             my ( $type, $name, @other ) = @{ name_decode( $_[0] ) };
-                            name_encode( [ $type, "$dir/$name", @other ] );
+                            name_encode( [ $type, in_dir( $fsmap, $dir, $name ), @other ] );
                         }
                     );
                     $g->ingest($g2);
@@ -853,7 +856,8 @@ Hash-ref of file-system functions by which to access the
 file-system. Created to help testing, but might be more widely useful.
 Defaults to code accessing the actual local filesystem. The various
 functions are expected to return real Perl filehandles. Relevant keys:
-C<glob>, C<fh_open>, C<fh_write>, C<mtime>.
+C<glob>, C<fh_open>, C<fh_write>, C<mtime>, C<file_readable>,
+C<is_abs>.
 
 =head3 InDir
 

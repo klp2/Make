@@ -167,7 +167,7 @@ my $recmake_fsmap = make_fsmap(
     {
         Makefile                    => [ 1, "MK=make\nall: bar sany\nsany:\n\tcd subdir && \$(MK)\n\tsay hi\n" ],
         'subdir/Makefile'           => [ 1, "all: sbar sfoo\n\tcd subsubdir && make\n" ],
-        'subdir/subsubdir/Makefile' => [ 1, "all:\n\techo L3\n" ],
+        'subdir/subsubdir/Makefile' => [ 1, "all: /top/level\n\techo L3\n" ],
     }
 );
 $m = Make->new( FSFunctionMap => $recmake_fsmap )->parse;
@@ -247,13 +247,14 @@ is_deeply $got,
             'recipe'     => ['echo L3'],
             'recipe_raw' => ['echo L3']
         },
+        'target:/top/level'           => {},
         'target:all'                  => {},
         'target:bar'                  => {},
         'target:sany'                 => {},
         'target:subdir/all'           => {},
         'target:subdir/sbar'          => {},
         'target:subdir/sfoo'          => {},
-        'target:subdir/subsubdir/all' => {}
+        'target:subdir/subsubdir/all' => {},
     },
     {
         'rule:all:0' => {
@@ -271,6 +272,9 @@ is_deeply $got,
             'target:subdir/subsubdir/all' => {
                 'fromline' => 0
             }
+        },
+        'rule:subdir/subsubdir/all:0' => {
+            'target:/top/level' => {},
         },
         'target:all' => {
             'rule:all:0' => {}
@@ -301,6 +305,7 @@ is_deeply $got,
         'subdir/sbar'          => {},
         'subdir/sfoo'          => {},
         'subdir/subsubdir/all' => {},
+        '/top/level'           => {},
     },
     {
         'all' => {
@@ -314,6 +319,9 @@ is_deeply $got,
             'subdir/subsubdir/all' => {},
             'subdir/sbar'          => {},
             'subdir/sfoo'          => {},
+        },
+        'subdir/subsubdir/all' => {
+            '/top/level' => {},
         },
     }
     ],
@@ -400,5 +408,6 @@ sub make_fsmap {
         fh_write      => sub { my $fh = shift; $fh2file_tuple{$fh}[0] = time; print {$fh} @_ },
         file_readable => sub { exists $vfs_copy{ $_[0] } },
         mtime         => sub { ( $vfs_copy{ $_[0] } || [] )->[0] },
+        is_abs        => sub { $_[0] =~ /^\// },
     };
 }
