@@ -60,7 +60,8 @@ my %WriteMakefileArgs = (
         "Graph"            => '0.9710',    # all_paths
     },
     "TEST_REQUIRES" => {
-        "Test::More" => "1.00",
+        "Test::More"     => "1.00",
+        'Test::Snapshot' => '0.06',
     },
 );
 

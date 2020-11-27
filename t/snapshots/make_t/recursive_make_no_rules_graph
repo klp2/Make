@@ -1,0 +1,31 @@
+[
+  {
+    '/top/level' => {},
+    'all' => {},
+    'bar' => {},
+    'first' => {},
+    'sany' => {},
+    'subdir/all' => {},
+    'subdir/sbar' => {},
+    'subdir/sfoo' => {},
+    'subdir/subsubdir/all' => {}
+  },
+  {
+    'all' => {
+      'bar' => {},
+      'sany' => {}
+    },
+    'sany' => {
+      'subdir/all' => {}
+    },
+    'subdir/all' => {
+      'first' => {},
+      'subdir/sbar' => {},
+      'subdir/sfoo' => {},
+      'subdir/subsubdir/all' => {}
+    },
+    'subdir/subsubdir/all' => {
+      '/top/level' => {}
+    }
+  }
+]
