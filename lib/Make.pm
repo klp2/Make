@@ -598,7 +598,6 @@ sub _rmf_search_rule {
 
 sub find_recursive_makes {
     my ($self) = @_;
-    my $g = $self->as_graph;
     my @found;
     my $rmfs = $self->{RecursiveMakeFinders};
     for my $target ( sort $self->targets ) {
