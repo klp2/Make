@@ -52,27 +52,12 @@ elsif ( $redundancy ) {
         my $es = "@$e";
         print "Redundant: $es\n";
         print "\t$_\n"
-            for sort grep !$seen{$_}++, map "@$_", all_paths($g, $tcg, @$e);
+            for sort grep !$seen{$_}++, map "@$_", $tcg->all_paths(@$e);
     }
     ## use critic
 }
 else {
     $info->Make(@ARGV);
-}
-
-sub all_paths {
-    my ($g, $tcg, $u, $v) = @_;
-    return if $u eq $v;
-    my @found;
-    push @found, [$u, $v] if $g->has_edge($u, $v);
-    ## no critic (BuiltinFunctions::RequireBlockGrep BuiltinFunctions::RequireBlockMap)
-    push @found,
-        map [$u, @$_],
-        map all_paths($g, $tcg, $_, $v),
-        grep $tcg->is_reachable($_, $v),
-        grep $_ ne $v, $g->successors($u);
-    ## use critic
-    return @found;
 }
 
 =head1 NAME
