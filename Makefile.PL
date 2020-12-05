@@ -57,7 +57,7 @@ my %WriteMakefileArgs = (
         "warnings"         => 0,
         "Text::Balanced"   => '2.03',
         "Text::ParseWords" => '3.24',
-        "Graph"            => '0.9710',    # all_paths
+        "Graph"            => '0.9712',    # TC with multiedged
     },
     "TEST_REQUIRES" => {
         "Test::More"     => "1.00",
