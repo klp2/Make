@@ -116,7 +116,7 @@ Prefixes each word in the second arg with first arg:
 
 Suffixes each word in the second arg with first arg:
 
-    $(addprefix /x,1 2)
+    $(addsuffix /x,1 2)
     # becomes 1/x 2/x
 
 =head2 notdir
