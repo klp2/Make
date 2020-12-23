@@ -28,6 +28,13 @@ sub addprefix {
     ## use critic
 }
 
+sub addsuffix {
+    my ( $fsmap, $suffix, $text_input ) = @_;
+    ## no critic (BuiltinFunctions::RequireBlockMap)
+    return map $_ . $suffix, @{ Make::tokenize($text_input) };
+    ## use critic
+}
+
 sub notdir {
     my ( $fsmap, $text_input ) = @_;
     my @files = @{ Make::tokenize($text_input) };
@@ -104,6 +111,13 @@ Prefixes each word in the second arg with first arg:
 
     $(addprefix x/,1 2)
     # becomes x/1 x/2
+
+=head2 addsuffix
+
+Suffixes each word in the second arg with first arg:
+
+    $(addprefix /x,1 2)
+    # becomes 1/x 2/x
 
 =head2 notdir
 
